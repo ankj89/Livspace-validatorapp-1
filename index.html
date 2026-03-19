@@ -15,7 +15,7 @@ header{background:#1e3d8f;color:white;padding:14px;font-size:18px}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
 
 label{font-weight:600;font-size:13px}
-input,select,textarea{width:100%;padding:6px;border-radius:6px;border:1px solid #ccc}
+input,textarea{width:100%;padding:6px;border-radius:6px;border:1px solid #ccc}
 textarea{height:50px}
 
 button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius:6px;margin:4px;cursor:pointer}
@@ -35,6 +35,13 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 .progressFill{height:100%;background:#1e3d8f;border-radius:4px}
 
 .summaryBox{background:#f9fafc;padding:10px;border-radius:6px;margin-bottom:10px}
+
+/* 🔥 TOGGLE */
+.toggleGroup{display:flex;gap:6px;margin-top:6px}
+.toggleBtn{padding:6px 10px;border:1px solid #ccc;border-radius:6px;cursor:pointer;background:#fff}
+.toggleBtn.active.yes{background:#28a745;color:#fff}
+.toggleBtn.active.no{background:#dc3545;color:#fff}
+.toggleBtn.active.na{background:#6c757d;color:#fff}
 </style>
 </head>
 
@@ -57,7 +64,6 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 </div>
 </div>
 
-<!-- ✅ SOCIETY SECTION FIXED -->
 <div class="card">
 <h3>Society Constraints</h3>
 <div class="grid">
@@ -163,7 +169,6 @@ const wallQuestions=["Is the wall a load-bearing wall/Mivan Construction/Sheer w
 const defaultRooms=["Living Room","Kitchen","Bedroom 1","Bedroom 2","Bathroom 1","Bathroom 2","Balcony"]
 
 let roomOrder=[...defaultRooms]
-
 let data=JSON.parse(localStorage.getItem("validatorData")||"{}")
 
 function normalizeData(){
@@ -194,6 +199,38 @@ break
 }
 }
 
+/* 🔥 TOGGLE FUNCTION */
+function createToggle(value,onChange){
+let div=document.createElement("div")
+div.className="toggleGroup"
+
+let options=["Yes","No","NA"]
+
+options.forEach(opt=>{
+let btn=document.createElement("div")
+btn.className="toggleBtn"
+btn.innerText=opt
+
+btn.onclick=()=>{
+div.querySelectorAll(".toggleBtn").forEach(b=>b.classList.remove("active","yes","no","na"))
+
+btn.classList.add("active")
+btn.classList.add(opt.toLowerCase())
+
+onChange(opt)
+}
+
+if(value===opt){
+btn.classList.add("active")
+btn.classList.add(opt.toLowerCase())
+}
+
+div.appendChild(btn)
+})
+
+return div
+}
+
 function applyAllWalls(value, room){
 const r=data.rooms[room]
 wallQuestions.forEach(q=>{r.wall[q]=value})
@@ -208,19 +245,6 @@ renderTabs(room)
 
 const container=document.getElementById("roomForm")
 container.innerHTML=""
-
-let totalQ=roomQuestions.length+wallQuestions.length
-let answered=0
-wallQuestions.forEach(q=>{if(r.wall[q])answered++})
-roomQuestions.forEach(q=>{if(r.room[q])answered++})
-
-let percent=Math.round((answered/totalQ)*100)
-
-container.innerHTML+=`
-<h3>${room} (${percent}% complete)</h3>
-<div class="progressBar"><div class="progressFill" style="width:${percent}%"></div></div>
-<div class="summaryBox"><b>Summary:</b> ${answered}/${totalQ} answered</div>
-`
 
 function createAccordion(title){
 let acc=document.createElement("div")
@@ -241,7 +265,6 @@ wallSection.innerHTML+=`
 <button onclick="applyAllWalls('No','${room}')">Apply No to All</button>
 `
 
-/* ✅ WALL UI UPDATED */
 wallQuestions.forEach(q=>{
 let div=document.createElement("div")
 div.className="questionBlock "+(r.wall[q]?"statusAnswered":"statusPending")
@@ -249,46 +272,35 @@ div.className="questionBlock "+(r.wall[q]?"statusAnswered":"statusPending")
 let label=document.createElement("label")
 label.textContent=q
 
-let select=createYesNo(r.wall[q])
+let toggle=createToggle(r.wall[q], val=>{
+r.wall[q]=val
+saveData()
+div.className="questionBlock "+(val?"statusAnswered":"statusPending")
+scrollToNext(div)
+})
 
 let wallBox=document.createElement("div")
 wallBox.className="wallBox"
 
 walls.forEach(w=>{
-let lbl=document.createElement("label")
 let cb=document.createElement("input")
 cb.type="checkbox"
-
 let arr=r.wallSel[q]||[]
 cb.checked=arr.includes(w)
-
 cb.onchange=()=>{
 let arr=r.wallSel[q]||[]
-if(cb.checked){
-if(!arr.includes(w)) arr.push(w)
-}else{
-arr=arr.filter(x=>x!==w)
-}
+if(cb.checked){if(!arr.includes(w))arr.push(w)}
+else{arr=arr.filter(x=>x!==w)}
 r.wallSel[q]=arr
 saveData()
 }
-
-lbl.appendChild(cb)
-lbl.append(w)
-wallBox.appendChild(lbl)
+wallBox.append(cb,w)
 })
 
-let textarea=createTextarea(r.wall[q+"-c"])
+let textarea=document.createElement("textarea")
+textarea.value=r.wall[q+"-c"]||""
 
-select.onchange=()=>{
-r.wall[q]=select.value
-saveData()
-div.className="questionBlock "+(select.value?"statusAnswered":"statusPending")
-textarea.style.display=select.value==="No"?"none":"block"
-scrollToNext(div)
-}
-
-div.append(label,select,wallBox,textarea)
+div.append(label,toggle,wallBox,textarea)
 wallSection.appendChild(div)
 })
 
@@ -301,34 +313,20 @@ div.className="questionBlock "+(r.room[q]?"statusAnswered":"statusPending")
 let label=document.createElement("label")
 label.textContent=q
 
-let select=createYesNo(r.room[q])
-let textarea=createTextarea(r.room[q+"-c"])
-
-select.onchange=()=>{
-r.room[q]=select.value
+let toggle=createToggle(r.room[q], val=>{
+r.room[q]=val
 saveData()
-div.className="questionBlock "+(select.value?"statusAnswered":"statusPending")
-textarea.style.display=select.value==="No"?"none":"block"
+div.className="questionBlock "+(val?"statusAnswered":"statusPending")
 scrollToNext(div)
-}
+})
 
-div.append(label,select,textarea)
+let textarea=document.createElement("textarea")
+textarea.value=r.room[q+"-c"]||""
+
+div.append(label,toggle,textarea)
 roomSection.appendChild(div)
 })
 
-}
-
-function createYesNo(value){
-let select=document.createElement("select")
-select.innerHTML="<option></option><option>Yes</option><option>No</option>"
-select.value=value||""
-return select
-}
-
-function createTextarea(value){
-let t=document.createElement("textarea")
-t.value=value||""
-return t
 }
 
 function generateExcel(){
