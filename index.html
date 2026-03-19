@@ -94,11 +94,12 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 
 <script>
 const societyQuestions = [
-{key:"serviceLiftUsage", label:"Service lift usage allowed?", icon:"🛗", options:["Heavy material movement allowed","Heavy material movement Not allowed"]},
-{key:"loadingArea", label:"Debris loading area", icon:"🚚", options:["Within 30 ft","More than 30 ft","Not present"]},
-{key:"debrisDumping", label:"Debris dumping allowed?", icon:"🗑️", options:["Yes","No"]},
-{key:"vehicleEntry", label:"Vehicle entry possible?", icon:"🚗", options:["Yes","No"]},
-{key:"societyRestrictions", label:"Society Restrictions", icon:"📝", type:"textarea"}
+{key:"serviceLiftUsage", label:"Service lift usage allowed?", options:["Yes,Heavy material movement allowed","Yes,Heavy material movement Not allowed","No"]},
+{key:"loadingArea", label:"Debris/material loading area present?", options:["Within 30 ft","More than 30 ft","Not present"]},
+{key:"societyDemolish", label:"What king of demolition is allowed?", options:["Mechanical","Manual","Mechanical or Manual"]},
+{key:"vehicleEntry", label:"Vehicle entry possible?", options:["Yes,samm size","Yes,medium size","Yes,large size","No"]},
+{key:"societyRestrictions", label:"Society Restrictions", type:"textarea"},
+{key:"societyWorktimings", label:"Society Work Timings", type:"textarea"},
 ]
 const walls=["NW","EW","SW","WW"]
 
