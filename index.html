@@ -186,7 +186,17 @@ localStorage.setItem("validatorData",JSON.stringify(data))
 }
 
 function renderTabs(activeRoom){
-roomTabs.innerHTML=roomOrder.map(r=>`<span class="roomTab" onclick="openRoom('${r}')">${r}</span>`).join("")
+
+const container = document.getElementById("roomTabs")
+
+container.innerHTML = roomOrder.map(r=>`
+<span class="roomTab" 
+style="${r===activeRoom ? 'background:#1e3d8f;color:white' : ''}"
+onclick="openRoom('${r}')">
+${r}
+</span>
+`).join("")
+
 }
 
 function scrollToNext(currentDiv){
