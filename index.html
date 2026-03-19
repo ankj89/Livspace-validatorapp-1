@@ -11,20 +11,32 @@ body{font-family:Arial;margin:0;background:#f4f6fb}
 header{background:#1e3d8f;color:white;padding:14px;font-size:18px}
 .container{padding:14px;max-width:1200px;margin:auto}
 .card{background:white;padding:16px;margin-bottom:14px;border-radius:8px;border:1px solid #ddd}
+
 .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+
 .field{display:flex;flex-direction:column;font-size:13px}
+
+input,select,textarea{padding:6px;border-radius:6px;border:1px solid #ccc}
 textarea{height:50px}
+
 button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius:6px;margin:4px;cursor:pointer}
+
 .roomTab{display:inline-block;padding:8px 12px;border:1px solid #ccc;margin:3px;border-radius:6px;cursor:pointer}
+
 .wallBox{display:flex;gap:12px;margin-top:4px}
 .radioBox{display:flex;gap:10px}
+
 .accordion{cursor:pointer;background:#eef2ff;padding:10px;border-radius:6px;margin-top:10px}
 .accordionContent{display:none;padding-top:10px}
+
 .questionRow{margin-bottom:12px;padding:8px;border-radius:6px}
 .statusAnswered{background:#e6f7e6}
 .statusPending{background:#ffe6e6}
+
 .progressBar{height:8px;background:#ddd;border-radius:4px;margin-top:6px}
 .progressFill{height:100%;background:#1e3d8f;border-radius:4px}
+
 .summaryBox{background:#f9fafc;padding:10px;border-radius:6px;margin-bottom:10px}
 </style>
 </head>
@@ -51,10 +63,49 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 <div class="card">
 <h3>Society Constraints</h3>
 <div class="grid">
-<div class="field"><label>Service lift usage allowed?</label><select id="serviceLiftUsage" onchange="saveData()"><option></option><option>Allowed</option><option>Not Allowed</option></select></div>
-<div class="field"><label>Debris loading area</label><select id="loadingArea" onchange="saveData()"><option></option><option>Within 30 ft</option><option>More than 30 ft</option></select></div>
-<div class="field"><label>Debris dumping allowed?</label><select id="debrisDumping" onchange="saveData()"><option></option><option>Yes</option><option>No</option></select></div>
-<div class="field"><label>Vehicle entry possible?</label><select id="vehicleEntry" onchange="saveData()"><option></option><option>Yes</option><option>No</option></select></div>
+
+<div class="field">
+<label>Service lift usage allowed?</label>
+<select id="serviceLiftUsage" onchange="saveData()">
+<option value=""></option>
+<option>Allowed</option>
+<option>Not Allowed</option>
+</select>
+</div>
+
+<div class="field">
+<label>Debris loading area</label>
+<select id="loadingArea" onchange="saveData()">
+<option value=""></option>
+<option>Within 30 ft</option>
+<option>More than 30 ft</option>
+<option>Not present</option>
+</select>
+</div>
+
+<div class="field">
+<label>Debris dumping allowed?</label>
+<select id="debrisDumping" onchange="saveData()">
+<option value=""></option>
+<option>Yes</option>
+<option>No</option>
+</select>
+</div>
+
+<div class="field">
+<label>Vehicle entry possible?</label>
+<select id="vehicleEntry" onchange="saveData()">
+<option value=""></option>
+<option>Yes</option>
+<option>No</option>
+</select>
+</div>
+
+<div class="field">
+<label>Society Restrictions</label>
+<textarea id="societyRestrictions" onchange="saveData()"></textarea>
+</div>
+
 </div>
 </div>
 
@@ -75,16 +126,60 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 
 const walls=["NW","EW","SW","WW"]
 
-const roomQuestions=["Is flooring OK?","Tile on tile possible?","Ceiling clearance OK?"]
-const wallQuestions=["Wall load-bearing?","Wall cracks?","Wall uneven?"]
+const roomQuestions=["Is there a requirement of PCC due to leveling issues/bare shell property?",
+"Existing flooring in Good condition with with proper slope/levels?",
+"Can we do tile on tile installation?",
+"Is there sufficient height or clearance between the existing ceiling and any obstructions (such as beams, HVAC systems, or lighting fixtures) to accommodate the false ceiling installation?",
+"Are there visible undulations/uneven surface on the True Ceiling?",
+"Is there any evidence of water leaks or moisture damage on the existing true ceiling?",
+"Are the dimensions of the space suitable for accommodating a sliding door system?",
+"Can we changes to the size, shape, or location of the windows?",
+"Are the existing windows and window frames in poor condition, damaged, rot, instability etc",
+"Is there a possibility to relocate from one wall to another?",
+"Is there any 15 Amp power Supply present in the room?",
+"Are there any issues with the existing plumbing lines, such as leaks, corrosion, blockages, or inadequate capacity, that require replacement or repair?",
+"Are existing plumbing lines old and outdated and may not be compatible with modern fixtures?",
+"Is the main inlet valve accesible?",
+"Is there sufficent space to provide Shower cubicle?",
+"Is it possible to relocate the WC, without any modifications to external pipeline/drain line?",
+"Do we need to provide damp proof treament on walls?",
+"Do we need to provide weather proof treatment on walls which are exposed to external atmosphere?",
+"Is there existing countertop present?",
+"Are there any issues with the existing false ceiling, such as damage, sagging, or instability, that require removal and replacement?"]
+const wallQuestions=["Is the wall a load-bearing wall/Mivan Construction/Sheer wall?",
+"Is the wall dry wall/Gypsum wall?",
+"Are there major cracks that require structural repair?",
+"Does the existing wall surface have undulations or uneven surface, requiring leveling?",
+"Are the undulation more than 6 mm?",
+"Are there minor cracks/loose plaster requiring re plastering??",
+"Is there suitable location for core cut available?",
+"Are existing switch/socket in working condition?",
+"Can we re-use the existing module/switch board?",
+"Can split AC be installed post false ceiling w/o pockets?",
+"Is panelling/pelmet required to be done for AC installation?",
+"Are there any darker shade on the wall?",
+"Is the existing paint in good condition, without excessive peeling, flaking, or bubbling?",
+"Do we need to remove skirting for wardrobe installlation?"]
 
-const defaultRooms=["Living Room","Kitchen"]
+const defaultRooms=["Living Room","Kitchen","Bedroom 1","Bedroom 2","Bathroom 1","Bathroom 2","Balcony"]
+
 let roomOrder=[...defaultRooms]
 
-let data={rooms:{}}
-roomOrder.forEach(r=>data.rooms[r]={room:{},wall:{},wallSel:{}})
+let data=JSON.parse(localStorage.getItem("validatorData")||"{}")
 
-function saveData(){}
+function normalizeData(){
+if(!data.rooms)data.rooms={}
+roomOrder.forEach(r=>{
+if(!data.rooms[r])data.rooms[r]={room:{},wall:{},wallSel:{}}
+})
+}
+normalizeData()
+
+function saveData(){
+data.project={pid:pid.value,cx:cx.value,city:city.value,address:address.value,society:society.value,flat:flat.value,floorNo:floorNo.value}
+data.constraints={serviceLiftUsage:serviceLiftUsage.value,loadingArea:loadingArea.value,debrisDumping:debrisDumping.value,vehicleEntry:vehicleEntry.value,societyRestrictions:societyRestrictions.value}
+localStorage.setItem("validatorData",JSON.stringify(data))
+}
 
 function renderTabs(activeRoom){
 roomTabs.innerHTML=roomOrder.map(r=>`<span class="roomTab" onclick="openRoom('${r}')">${r}</span>`).join("")
@@ -93,19 +188,23 @@ roomTabs.innerHTML=roomOrder.map(r=>`<span class="roomTab" onclick="openRoom('${
 function createYesNoRadio(value,callback){
 let div=document.createElement("div")
 div.className="radioBox"
-;["Yes","No"].forEach(v=>{
+
+["Yes","No"].forEach(v=>{
+let label=document.createElement("label")
 let input=document.createElement("input")
 input.type="radio"
+input.name=Math.random()
+input.value=v
 input.checked=value===v
-input.onchange=()=>callback(v)
-div.append(input,v)
-})
-return div
-}
 
-function applyAllWalls(val,room){
-wallQuestions.forEach(q=>data.rooms[room].wall[q]=val)
-openRoom(room)
+input.onchange=()=>callback(v)
+
+label.appendChild(input)
+label.append(v)
+div.appendChild(label)
+})
+
+return div
 }
 
 function openRoom(room){
@@ -116,77 +215,120 @@ renderTabs(room)
 const container=document.getElementById("roomForm")
 container.innerHTML=""
 
-let total=roomQuestions.length+wallQuestions.length
-let answered=0
-
-wallQuestions.forEach(q=>{if(r.wall[q])answered++})
-roomQuestions.forEach(q=>{if(r.room[q])answered++})
-
-let percent=Math.round((answered/total)*100)
-
-container.innerHTML+=`
-<h3>${room} (${percent}%)</h3>
-<div class="progressBar"><div class="progressFill" style="width:${percent}%"></div></div>
-<div class="summaryBox">${answered}/${total} answered</div>
-`
-
-function accordion(title){
-let a=document.createElement("div")
-a.className="accordion"
-a.textContent=title
-let c=document.createElement("div")
-c.className="accordionContent"
-a.onclick=()=>c.style.display=c.style.display==="block"?"none":"block"
-container.append(a,c)
-return c
+function createAccordion(title){
+let acc=document.createElement("div")
+acc.className="accordion"
+acc.textContent=title
+let content=document.createElement("div")
+content.className="accordionContent"
+acc.onclick=()=>{content.style.display=content.style.display==="block"?"none":"block"}
+container.appendChild(acc)
+container.appendChild(content)
+return content
 }
 
-let wallSec=accordion("Wall Questions")
-
-wallSec.innerHTML+=`
-<button onclick="applyAllWalls('Yes','${room}')">Yes All</button>
-<button onclick="applyAllWalls('No','${room}')">No All</button>
-`
+let wallSection=createAccordion("Wall Questions")
 
 wallQuestions.forEach(q=>{
 let div=document.createElement("div")
 div.className="questionRow "+(r.wall[q]?"statusAnswered":"statusPending")
 
-let radio=createYesNoRadio(r.wall[q],v=>{
-r.wall[q]=v
-openRoom(room)
+let label=document.createElement("div")
+label.textContent=q
+
+let radio=createYesNoRadio(r.wall[q],val=>{
+r.wall[q]=val
+saveData()
 })
 
-div.append(q,radio)
-wallSec.appendChild(div)
+let wallBox=document.createElement("div")
+wallBox.className="wallBox"
+
+walls.forEach(w=>{
+let cb=document.createElement("input")
+cb.type="checkbox"
+
+let arr=r.wallSel[q]||[]
+cb.checked=arr.includes(w)
+
+cb.onchange=()=>{
+let arr=r.wallSel[q]||[]
+if(cb.checked){if(!arr.includes(w))arr.push(w)}
+else{arr=arr.filter(x=>x!==w)}
+r.wallSel[q]=arr
+saveData()
+}
+
+wallBox.append(cb,w)
 })
 
-let roomSec=accordion("Room Questions")
+let textarea=createTextarea(r.wall[q+"-c"])
+
+div.append(label,radio,wallBox,textarea)
+wallSection.appendChild(div)
+})
+
+let roomSection=createAccordion("Room Questions")
 
 roomQuestions.forEach(q=>{
 let div=document.createElement("div")
-let radio=createYesNoRadio(r.room[q],v=>{
-r.room[q]=v
-openRoom(room)
+
+let label=document.createElement("div")
+label.textContent=q
+
+let radio=createYesNoRadio(r.room[q],val=>{
+r.room[q]=val
+saveData()
 })
-div.append(q,radio)
-roomSec.appendChild(div)
+
+let textarea=createTextarea(r.room[q+"-c"])
+
+div.append(label,radio,textarea)
+roomSection.appendChild(div)
 })
 
 }
 
-function generateExcel(){alert("Excel ready")}
+function createTextarea(value){
+let t=document.createElement("textarea")
+t.value=value||""
+t.onchange=()=>saveData()
+return t
+}
+
+function generateExcel(){
+saveData()
+let rows=[]
+Object.keys(data.rooms).forEach(room=>{
+let r=data.rooms[room]
+Object.entries(r.wall).forEach(([k,v])=>{
+if(k.endsWith("-c")) return
+rows.push({...data.project,...data.constraints,Room:room,Section:"Wall",Item:k,Value:v,Walls:(r.wallSel[k]||[]).join(","),Comments:r.wall[k+"-c"]||""})
+})
+Object.entries(r.room).forEach(([k,v])=>{
+if(k.endsWith("-c")) return
+rows.push({...data.project,...data.constraints,Room:room,Section:"Room",Item:k,Value:v,Comments:r.room[k+"-c"]||""})
+})
+})
+let wb=XLSX.utils.book_new()
+let ws=XLSX.utils.json_to_sheet(rows)
+XLSX.utils.book_append_sheet(wb,ws,"Validation Data")
+XLSX.writeFile(wb,"site_validation.xlsx")
+}
 
 function addRoom(){
-let name=prompt("Room name")
+let name=prompt("Enter room name")
+if(!name)return
 roomOrder.push(name)
 data.rooms[name]={room:{},wall:{},wallSel:{}}
 renderTabs(name)
 openRoom(name)
 }
 
+document.addEventListener("DOMContentLoaded",()=>{
 renderTabs(defaultRooms[0])
 openRoom(defaultRooms[0])
+})
 
 </script>
 
