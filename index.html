@@ -73,17 +73,18 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 <label>Service lift usage allowed?</label>
 <select id="serviceLiftUsage" onchange="saveData()">
 <option></option>
-<option>Heavy material movement allowed</option>
-<option>Heavy material movement Not allowed</option>
+<option>Yes,Heavy material movement allowed</option>
+<option>Yes,Heavy material movement Not allowed</option>
+<option>No</option>
 </select>
 </div>
 
 <div>
-<label>Debris loading area</label>
+<label>Debris/Material loading area is present?</label>
 <select id="loadingArea" onchange="saveData()">
 <option></option>
-<option>Within 30 ft</option>
-<option>More than 30 ft</option>
+<option>Within 30 ft from site</option>
+<option>More than 30 ft from site</option>
 <option>Not present</option>
 </select>
 </div>
@@ -101,10 +102,12 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 <label>Vehicle entry possible?</label>
 <select id="vehicleEntry" onchange="saveData()">
 <option></option>
-<option>Yes</option>
+<option>Yes,Small to midsize vehicle</option>
+<option>Yes,large size vehicle</option>
 <option>No</option>
 </select>
 </div>
+<div>
 
 <div>
 <label>Society Restrictions</label>
