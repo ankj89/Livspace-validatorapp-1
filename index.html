@@ -144,7 +144,7 @@ let data=JSON.parse(localStorage.getItem("validatorData")||"{}")
 function normalizeData(){
 if(!data.rooms)data.rooms={}
 defaultRooms.forEach(r=>{
-if(!data.rooms[r])data.rooms[r]={room:{},wall:{},wallSel:{}}
+if(!data.rooms[r])data.rooms[r]={room:{},wall:{},wallSel:{},measurement:{}}
 })
 }
 normalizeData()
@@ -314,7 +314,50 @@ textarea.value=r.room[q+"-c"]||""
 div.append(label,toggle,textarea)
 roomSection.appendChild(div)
 })
+/* 🔥 MEASUREMENT SECTION */
+let measureSection=createAccordion("Measurement Section")
 
+let m = r.measurement || {}
+r.measurement = m
+
+function createInput(labelText,key){
+
+let div=document.createElement("div")
+div.className="questionBlock"
+
+let label=document.createElement("label")
+label.innerText=labelText
+
+let input=document.createElement("input")
+input.type="number"
+input.placeholder="mm"
+input.value=m[key] || ""
+
+input.onchange=()=>{
+m[key]=input.value
+saveData()
+}
+
+div.append(label,input)
+return div
+}
+
+/* FLOOR TO CEILING */
+measureSection.appendChild(createInput("Floor to Ceiling - Corner 1","fc1"))
+measureSection.appendChild(createInput("Floor to Ceiling - Corner 2","fc2"))
+measureSection.appendChild(createInput("Floor to Ceiling - Corner 3","fc3"))
+measureSection.appendChild(createInput("Floor to Ceiling - Corner 4","fc4"))
+measureSection.appendChild(createInput("Floor to Ceiling - Center","fc5"))
+
+/* ROOM DIAGONALS */
+measureSection.appendChild(createInput("Room Diagonal 1","diag1"))
+measureSection.appendChild(createInput("Room Diagonal 2","diag2"))
+
+/* WALL UNDULATION */
+measureSection.appendChild(createInput("Wall Undulation NW","undNW"))
+measureSection.appendChild(createInput("Wall Undulation EW","undEW"))
+measureSection.appendChild(createInput("Wall Undulation SW","undSW"))
+measureSection.appendChild(createInput("Wall Undulation WW","undWW"))
 /* ✅ NEXT ROOM BUTTON (CORRECT PLACE) */
 let index = roomOrder.indexOf(room)
 
@@ -349,8 +392,39 @@ rows.push({...data.project,...data.constraints,Room:room,Section:"Room",Item:k,V
 })
 })
 let wb=XLSX.utils.book_new()
+
+/* EXISTING SHEET */
 let ws=XLSX.utils.json_to_sheet(rows)
 XLSX.utils.book_append_sheet(wb,ws,"Validation Data")
+
+/* 🔥 NEW MEASUREMENT SHEET */
+let measureRows=[]
+
+Object.keys(data.rooms).forEach(room=>{
+let m=data.rooms[room].measurement || {}
+
+measureRows.push({
+...data.project,
+...data.constraints,
+Room:room,
+Floor_Corner1:m.fc1 || "",
+Floor_Corner2:m.fc2 || "",
+Floor_Corner3:m.fc3 || "",
+Floor_Corner4:m.fc4 || "",
+Floor_Center:m.fc5 || "",
+Diagonal1:m.diag1 || "",
+Diagonal2:m.diag2 || "",
+Undulation_NW:m.undNW || "",
+Undulation_EW:m.undEW || "",
+Undulation_SW:m.undSW || "",
+Undulation_WW:m.undWW || ""
+})
+
+})
+
+let ws2=XLSX.utils.json_to_sheet(measureRows)
+XLSX.utils.book_append_sheet(wb,ws2,"Measurements")
+
 XLSX.writeFile(wb,"site_validation.xlsx")
 }
 
