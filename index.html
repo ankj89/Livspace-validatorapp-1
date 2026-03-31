@@ -328,6 +328,11 @@ wallBox.append(cb,w)
 let textarea=document.createElement("textarea")
 textarea.value=r.wall[q+"-c"]||""
 
+textarea.oninput=()=>{
+r.wall[q+"-c"]=textarea.value
+saveData()
+}
+
 div.append(label,toggle,wallBox,textarea)
 wallSection.appendChild(div)
 })
@@ -351,6 +356,11 @@ scrollToNext(div)
 
 let textarea=document.createElement("textarea")
 textarea.value=r.room[q+"-c"]||""
+
+textarea.oniput=()=>{
+r.room[q+"-c"]=textarea.value
+saveData()
+}
 
 div.append(label,toggle,textarea)
 roomSection.appendChild(div)
