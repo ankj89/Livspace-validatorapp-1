@@ -103,6 +103,46 @@ const societyQuestions = [
 ];
   
 const walls=["NW","EW","SW","WW"]
+/* 🔥 MEASUREMENT CONFIG */
+
+const measurementFields = [
+
+/* FLOOR TO CEILING */
+{label:"Floor to Ceiling - Corner 1", key:"fc1"},
+{label:"Floor to Ceiling - Corner 2", key:"fc2"},
+{label:"Floor to Ceiling - Corner 3", key:"fc3"},
+{label:"Floor to Ceiling - Corner 4", key:"fc4"},
+{label:"Floor to Ceiling - Center", key:"fc5"},
+
+/* ROOM DIAGONALS */
+{label:"Room Diagonal 1", key:"diag1"},
+{label:"Room Diagonal 2", key:"diag2"},
+
+/* WALL UNDULATION */
+{label:"Wall Undulation NW", key:"undNW"},
+{label:"Wall Undulation EW", key:"undEW"},
+{label:"Wall Undulation SW", key:"undSW"},
+{label:"Wall Undulation WW", key:"undWW"},
+
+/* 🔥 NEW ADDITIONS */
+
+/* CEILING UTILITIES */
+{label:"Beam Bottom to Floor (mm)", key:"beamFloor"},
+{label:"Sprinkler Head to Floor (mm)", key:"sprinklerFloor"},
+
+/* SOFFIT (WALL-WISE) */
+{label:"Door Soffit to Ceiling - NW", key:"soffitNW"},
+{label:"Door Soffit to Ceiling - EW", key:"soffitEW"},
+{label:"Door Soffit to Ceiling - SW", key:"soffitSW"},
+{label:"Door Soffit to Ceiling - WW", key:"soffitWW"},
+
+/* WINDOW SOFFIT */
+{label:"Window Soffit to Ceiling - NW", key:"winSoffitNW"},
+{label:"Window Soffit to Ceiling - EW", key:"winSoffitEW"},
+{label:"Window Soffit to Ceiling - SW", key:"winSoffitSW"},
+{label:"Window Soffit to Ceiling - WW", key:"winSoffitWW"}
+
+]
 
 const roomQuestions=[
 "Existing flooring in Good condition with with appropriate slope/levels? Capture Floor levels in Measurement Section",
@@ -343,46 +383,6 @@ div.append(label,input)
 return div
 }
 
-/* 🔥 MEASUREMENT CONFIG */
-
-const measurementFields = [
-
-/* FLOOR TO CEILING */
-{label:"Floor to Ceiling - Corner 1", key:"fc1"},
-{label:"Floor to Ceiling - Corner 2", key:"fc2"},
-{label:"Floor to Ceiling - Corner 3", key:"fc3"},
-{label:"Floor to Ceiling - Corner 4", key:"fc4"},
-{label:"Floor to Ceiling - Center", key:"fc5"},
-
-/* ROOM DIAGONALS */
-{label:"Room Diagonal 1", key:"diag1"},
-{label:"Room Diagonal 2", key:"diag2"},
-
-/* WALL UNDULATION */
-{label:"Wall Undulation NW", key:"undNW"},
-{label:"Wall Undulation EW", key:"undEW"},
-{label:"Wall Undulation SW", key:"undSW"},
-{label:"Wall Undulation WW", key:"undWW"},
-
-/* 🔥 NEW ADDITIONS */
-
-/* CEILING UTILITIES */
-{label:"Beam Bottom to Floor (mm)", key:"beamFloor"},
-{label:"Sprinkler Head to Floor (mm)", key:"sprinklerFloor"},
-
-/* SOFFIT (WALL-WISE) */
-{label:"Door Soffit to Ceiling - NW", key:"soffitNW"},
-{label:"Door Soffit to Ceiling - EW", key:"soffitEW"},
-{label:"Door Soffit to Ceiling - SW", key:"soffitSW"},
-{label:"Door Soffit to Ceiling - WW", key:"soffitWW"},
-
-/* WINDOW SOFFIT */
-{label:"Window Soffit to Ceiling - NW", key:"winSoffitNW"},
-{label:"Window Soffit to Ceiling - EW", key:"winSoffitEW"},
-{label:"Window Soffit to Ceiling - SW", key:"winSoffitSW"},
-{label:"Window Soffit to Ceiling - WW", key:"winSoffitWW"}
-
-]
 
 measurementFields.forEach(f=>{
 measureSection.appendChild(createInput(f.label,f.key))
@@ -441,6 +441,7 @@ row[f.key] = m[f.key] || ""
 })
 
 measureRows.push(row)
+console.log("Generating Excel...")
 })
 
 
@@ -454,7 +455,7 @@ function addRoom(){
 let name=prompt("Room name")
 if(!name)return
 roomOrder.push(name)
-data.rooms[name]={room:{},wall:{},wallSel:{}}
+data.rooms[name]={room:{},wall:{},wallSel:{},measurement;{}}
 renderTabs(name)
 }
   function goToNextRoom(currentRoom){
