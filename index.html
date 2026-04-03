@@ -593,36 +593,28 @@ document.body.appendChild(overlay)
 let canvas=overlay.querySelector("#editorCanvas")
 let ctx=canvas.getContext("2d")
 
+let mode="draw"   // ✅ FIXED
+let drawing=false
+
+/* LOAD IMAGE */
 let img=new Image()
 img.src=imgSrc
 
-let drawing = false
+img.onload=()=>{
 
-canvas.onmousedown = (e)=>{
-if(mode !== "draw") return
+/* ✅ DPR FIX */
+const dpr = window.devicePixelRatio || 1
 
-drawing = true
-ctx.beginPath()
-ctx.moveTo(e.offsetX, e.offsetY)
-}
+canvas.width = img.width * dpr
+canvas.height = img.height * dpr
+
 canvas.style.width = "100%"
 canvas.style.height = "auto"
-canvas.onmouseup = ()=> drawing = false
-canvas.onmouseleave = ()=> drawing = false
 
-canvas.onmousemove = (e)=>{
-if(!drawing || mode !== "draw") return
+ctx.scale(dpr,dpr)
 
-ctx.lineCap = "round"
-ctx.lineJoin = "round"
-ctx.strokeStyle = "red"
-ctx.lineWidth = 3
-
-ctx.lineTo(e.offsetX, e.offsetY)
-ctx.stroke()
-
-ctx.beginPath()
-ctx.moveTo(e.offsetX, e.offsetY)
+/* ✅ DRAW IMAGE (CRITICAL FIX) */
+ctx.drawImage(img,0,0)
 }
 
 /* BUTTONS */
@@ -645,7 +637,7 @@ canvas.onmouseup=()=>drawing=false
 canvas.onmouseleave=()=>drawing=false
 
 canvas.onmousemove=(e)=>{
-if(!drawing) return
+if(!drawing || mode!=="draw") return
 
 ctx.lineCap="round"
 ctx.lineJoin="round"
@@ -660,20 +652,21 @@ ctx.moveTo(e.offsetX,e.offsetY)
 }
 
 /* TEXT */
-canvas.ondblclick = (e)=>{
-if(mode === "text"){
-let txt = prompt("Enter note")
+canvas.ondblclick=(e)=>{
+if(mode==="text"){
+let txt=prompt("Enter note")
 if(txt){
-ctx.fillStyle = "red"
-ctx.font = "18px Arial"
-ctx.fillText(txt, e.offsetX, e.offsetY)
+ctx.fillStyle="red"
+ctx.font="18px Arial"
+ctx.fillText(txt,e.offsetX,e.offsetY)
 }
 }
 }
 
 /* SAVE */
 overlay.querySelector("#saveBtn").onclick=()=>{
-let finalImg=canvas.toDataURL("image/jpeg",0.7)
+
+let finalImg = canvas.toDataURL("image/jpeg",0.7)
 
 data.rooms[room].photos[surface].push(finalImg)
 
@@ -801,7 +794,7 @@ img.src=p
 img.style.width="80px"
 img.style.cursor="pointer"
 
-img.onclick=()=>openEditor(surface, room, idx)
+img.onclick=()=>openEditorDirect(p, surface, room)
 
 list.appendChild(img)
 })
