@@ -443,7 +443,7 @@ img.src=p
 img.style.width="80px"
 img.style.cursor="pointer"
 
-img.onclick=()=>openEditor(surface, room, idx)
+img.onclick=()=>openEditorDirect(surface, room, idx)
 
 list.appendChild(img)
 })
@@ -568,16 +568,19 @@ reader.readAsDataURL(file)
   
 function openEditorDirect(imgSrc, surface, room){
 
-let overlay=document.createElement("div")
-overlay.style.position="fixed"
-overlay.style.top=0
-overlay.style.left=0
-overlay.style.width="100%"
-overlay.style.height="100%"
-overlay.style.background="#000000cc"
-overlay.style.zIndex=9999
+/* 🔒 LOCK PAGE SCROLL */
+document.body.style.overflow = "hidden"
 
-overlay.innerHTML=`
+let overlay = document.createElement("div")
+overlay.style.position = "fixed"
+overlay.style.top = 0
+overlay.style.left = 0
+overlay.style.width = "100%"
+overlay.style.height = "100%"
+overlay.style.background = "#000"
+overlay.style.zIndex = 9999
+
+overlay.innerHTML = `
 <div style="position:absolute;top:10px;left:10px;z-index:10;">
 <button id="drawBtn">Draw</button>
 <button id="textBtn">Text</button>
@@ -590,93 +593,104 @@ overlay.innerHTML=`
 
 document.body.appendChild(overlay)
 
-let canvas=overlay.querySelector("#editorCanvas")
-let ctx=canvas.getContext("2d")
+let canvas = overlay.querySelector("#editorCanvas")
+let ctx = canvas.getContext("2d")
 
-let mode="draw"   // ✅ FIXED
-let drawing=false
+/* 🔥 CRITICAL: STOP SCROLL + ZOOM */
+canvas.style.touchAction = "none"
+
+/* STATE */
+let mode = "draw"
+let drawing = false
 
 /* LOAD IMAGE */
-let img=new Image()
-img.src=imgSrc
+let img = new Image()
+img.src = imgSrc
 
-img.onload=()=>{
+img.onload = () => {
 
-/* ✅ DPR FIX */
-const dpr = window.devicePixelRatio || 1
-
-canvas.width = img.width * dpr
-canvas.height = img.height * dpr
+/* 🔥 SIMPLE + CORRECT SIZE (NO DPR CONFUSION) */
+canvas.width = img.width
+canvas.height = img.height
 
 canvas.style.width = "100%"
 canvas.style.height = "auto"
 
-ctx.scale(dpr,dpr)
-
-/* ✅ DRAW IMAGE (CRITICAL FIX) */
-ctx.drawImage(img,0,0)
+ctx.drawImage(img, 0, 0)
 }
 
 /* BUTTONS */
-overlay.querySelector("#drawBtn").onclick=()=>mode="draw"
-overlay.querySelector("#textBtn").onclick=()=>mode="text"
+overlay.querySelector("#drawBtn").onclick = () => mode = "draw"
+overlay.querySelector("#textBtn").onclick = () => mode = "text"
 
-overlay.querySelector("#closeBtn").onclick=()=>{
-document.body.removeChild(overlay)
-}
+/* DRAW (WORKS ON MOBILE + DESKTOP) */
+canvas.addEventListener("pointerdown", (e)=>{
+if(mode !== "draw") return
 
-/* DRAW */
-canvas.onmousedown=(e)=>{
-if(mode!=="draw") return
-drawing=true
+drawing = true
+canvas.setPointerCapture(e.pointerId)
+
 ctx.beginPath()
-ctx.moveTo(e.offsetX,e.offsetY)
-}
+ctx.moveTo(e.offsetX, e.offsetY)
+})
 
-canvas.onmouseup=()=>drawing=false
-canvas.onmouseleave=()=>drawing=false
+canvas.addEventListener("pointermove", (e)=>{
+if(!drawing || mode !== "draw") return
 
-canvas.onmousemove=(e)=>{
-if(!drawing || mode!=="draw") return
+ctx.lineCap = "round"
+ctx.lineJoin = "round"
+ctx.strokeStyle = "red"
+ctx.lineWidth = 3
 
-ctx.lineCap="round"
-ctx.lineJoin="round"
-ctx.strokeStyle="red"
-ctx.lineWidth=3
-
-ctx.lineTo(e.offsetX,e.offsetY)
+ctx.lineTo(e.offsetX, e.offsetY)
 ctx.stroke()
 
 ctx.beginPath()
-ctx.moveTo(e.offsetX,e.offsetY)
-}
+ctx.moveTo(e.offsetX, e.offsetY)
+})
+
+canvas.addEventListener("pointerup", ()=>{
+drawing = false
+})
+
+canvas.addEventListener("pointercancel", ()=>{
+drawing = false
+})
 
 /* TEXT */
-canvas.ondblclick=(e)=>{
-if(mode==="text"){
-let txt=prompt("Enter note")
+canvas.addEventListener("click", (e)=>{
+if(mode === "text"){
+let txt = prompt("Enter note")
 if(txt){
-ctx.fillStyle="red"
-ctx.font="18px Arial"
-ctx.fillText(txt,e.offsetX,e.offsetY)
+ctx.fillStyle = "red"
+ctx.font = "18px Arial"
+ctx.fillText(txt, e.offsetX, e.offsetY)
 }
 }
-}
+})
 
 /* SAVE */
-overlay.querySelector("#saveBtn").onclick=()=>{
+overlay.querySelector("#saveBtn").onclick = () => {
 
-let finalImg = canvas.toDataURL("image/jpeg",0.7)
+let finalImg = canvas.toDataURL("image/jpeg", 0.7)
 
 data.rooms[room].photos[surface].push(finalImg)
 
 saveData()
 refreshPhotoSection(room)
 
+/* 🔓 RESTORE SCROLL */
+document.body.style.overflow = "auto"
+
 document.body.removeChild(overlay)
 }
+
+/* CLOSE */
+overlay.querySelector("#closeBtn").onclick = () => {
+document.body.style.overflow = "auto"
+document.body.removeChild(overlay)
 }
-  
+} 
 function addRoom(){
 let name=prompt("Room name")
 if(!name)return
