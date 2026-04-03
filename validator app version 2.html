@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Site Validation Tool</title>
+<title>Livspace-Site Validation Tool</title>
 
 <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
 
@@ -15,7 +15,7 @@ header{background:#1e3d8f;color:white;padding:14px;font-size:18px}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
 
 label{font-weight:600;font-size:13px}
-input,select,textarea{width:100%;padding:6px;border-radius:6px;border:1px solid #ccc}
+input,textarea{width:100%;padding:6px;border-radius:6px;border:1px solid #ccc}
 textarea{height:50px}
 
 button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius:6px;margin:4px;cursor:pointer}
@@ -35,6 +35,13 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 .progressFill{height:100%;background:#1e3d8f;border-radius:4px}
 
 .summaryBox{background:#f9fafc;padding:10px;border-radius:6px;margin-bottom:10px}
+
+/* 🔥 TOGGLE */
+.toggleGroup{display:flex;gap:6px;margin-top:6px}
+.toggleBtn{padding:6px 10px;border:1px solid #ccc;border-radius:6px;cursor:pointer;background:#fff}
+.toggleBtn.active.yes{background:#28a745;color:#fff}
+.toggleBtn.active.no{background:#dc3545;color:#fff}
+.toggleBtn.active.na{background:#6c757d;color:#fff}
 </style>
 </head>
 
@@ -46,7 +53,7 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 
 <div class="card">
 <h3>Preliminary Project Details</h3>
-<div class="grid">
+<div style="display:flex;flex-direction:column;gap:12px;">
 <input id="pid" placeholder="PID" onchange="saveData()">
 <input id="cx" placeholder="Cx Name" onchange="saveData()">
 <input id="city" placeholder="City" onchange="saveData()">
@@ -56,55 +63,15 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 <input id="floorNo" placeholder="Floor No" onchange="saveData()">
 </div>
 </div>
-
-<!-- ✅ SOCIETY SECTION FIXED -->
+  
 <div class="card">
 <h3>Society Constraints</h3>
-<div class="grid">
-
-<div>
-<label>Service lift usage allowed?</label>
-<select id="serviceLiftUsage" onchange="saveData()">
-<option></option>
-<option>Heavy material movement allowed</option>
-<option>Heavy material movement Not allowed</option>
-</select>
+<div id="societyForm" style="display:flex;flex-direction:column;gap:8px;"></div>
 </div>
 
-<div>
-<label>Debris loading area</label>
-<select id="loadingArea" onchange="saveData()">
-<option></option>
-<option>Within 30 ft</option>
-<option>More than 30 ft</option>
-<option>Not present</option>
-</select>
-</div>
 
-<div>
-<label>Debris dumping allowed?</label>
-<select id="debrisDumping" onchange="saveData()">
-<option></option>
-<option>Yes</option>
-<option>No</option>
-</select>
-</div>
 
-<div>
-<label>Vehicle entry possible?</label>
-<select id="vehicleEntry" onchange="saveData()">
-<option></option>
-<option>Yes</option>
-<option>No</option>
-</select>
-</div>
 
-<div style="grid-column: span 3;">
-<label>Society Restrictions</label>
-<textarea id="societyRestrictions" onchange="saveData()"></textarea>
-</div>
-
-</div>
 </div>
 
 <div class="card">
@@ -122,39 +89,89 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 </div>
 
 <script>
-
+const societyQuestions = [
+{key:"propertyType", label:"What is the type of property?", options:["Bare Shell","Property Less than 15 yrs","Property More than 15 yrs"]},
+{key:"serviceLiftUsage", label:"Service lift usage allowed?", options:["Yes,Heavy material movement allowed","Yes,Heavy material movement Not allowed","No"]},
+{key:"loadingArea", label:"Debris/material loading area present?", options:["Within 30 ft","More than 30 ft","Not present"]},
+{key:"societyDemolish", label:"What kind of demolition is allowed?", options:["Mechanical","Manual","Mechanical or Manual"]},
+{key:"vehicleEntry", label:"Vehicle entry allowed inside the premises?", options:["Yes,small size","Yes,medium size","Yes,large size","No"]},
+{key:"waterPoint", label:"Is there active water supply point at site location?", options:["Yes","No"]},
+{key:"electricPoint", label:"Is there active power supply at site location?", options:["Yes","No"]},
+{key:"workNOC", label:"Any NOC required to do internal modifications to the property?", options:["Yes","No"]},
+{key:"societyRestrictions", label:"Please mention any other society restrictions", type:"textarea"},
+{key:"societyWorktimings", label:"Please mention permissible work days and timings (e.g. Monday to Saturday, 10 AM to 2 PM, 4 PM to 8 PM)", type:"textarea"}                                                                     
+];
+  
 const walls=["NW","EW","SW","WW"]
+/* 🔥 MEASUREMENT CONFIG */
 
-const roomQuestions=["Is there a requirement of PCC due to leveling issues/bare shell property?",
-"Existing flooring in Good condition with with proper slope/levels?",
-"Can we do tile on tile installation?",
-"Is there sufficient height or clearance between the existing ceiling and any obstructions (such as beams, HVAC systems, or lighting fixtures) to accommodate the false ceiling installation?",
-"Are there visible undulations/uneven surface on the True Ceiling?",
-"Is there any evidence of water leaks or moisture damage on the existing true ceiling?",
-"Are the dimensions of the space suitable for accommodating a sliding door system?",
-"Can we changes to the size, shape, or location of the windows?",
-"Are the existing windows and window frames in poor condition, damaged, rot, instability etc",
-"Is there a possibility to relocate from one wall to another?",
-"Is there any 15 Amp power Supply present in the room?",
-"Are there any issues with the existing plumbing lines, such as leaks, corrosion, blockages, or inadequate capacity, that require replacement or repair?",
+const measurementFields = [
+
+/* FLOOR TO CEILING */
+{label:"Floor to Ceiling - Corner 1", key:"fc1"},
+{label:"Floor to Ceiling - Corner 2", key:"fc2"},
+{label:"Floor to Ceiling - Corner 3", key:"fc3"},
+{label:"Floor to Ceiling - Corner 4", key:"fc4"},
+{label:"Floor to Ceiling - Center", key:"fc5"},
+
+/* ROOM DIAGONALS */
+{label:"Room Diagonal 1", key:"diag1"},
+{label:"Room Diagonal 2", key:"diag2"},
+
+/* WALL UNDULATION */
+{label:"Wall Undulation NW", key:"undNW"},
+{label:"Wall Undulation EW", key:"undEW"},
+{label:"Wall Undulation SW", key:"undSW"},
+{label:"Wall Undulation WW", key:"undWW"},
+
+/* 🔥 NEW ADDITIONS */
+
+/* CEILING UTILITIES */
+{label:"Beam Bottom to Floor (mm)", key:"beamFloor"},
+{label:"Sprinkler Head to Floor (mm)", key:"sprinklerFloor"},
+
+/* SOFFIT (WALL-WISE) */
+{label:"Door Soffit to Ceiling - NW", key:"soffitNW"},
+{label:"Door Soffit to Ceiling - EW", key:"soffitEW"},
+{label:"Door Soffit to Ceiling - SW", key:"soffitSW"},
+{label:"Door Soffit to Ceiling - WW", key:"soffitWW"},
+
+/* WINDOW SOFFIT */
+{label:"Window Soffit to Ceiling - NW", key:"winSoffitNW"},
+{label:"Window Soffit to Ceiling - EW", key:"winSoffitEW"},
+{label:"Window Soffit to Ceiling - SW", key:"winSoffitSW"},
+{label:"Window Soffit to Ceiling - WW", key:"winSoffitWW"}
+
+]
+
+const roomQuestions=[
+"Existing flooring in Good condition with with appropriate slope/levels? Capture Floor levels in Measurement Section",
+"Can we do tile on tile installation?", 
+"Are existing walls in plumb/line and level? Capture Room diagonals in Measurement Section", 
+"Is there level difference in the True ceiling?Capture Floor to ceiling measurement in 4 corners and center in measurement section",
+"Are there any issues with the existing false ceiling that require removal and replacement?",                   
+"Are there visible undulations/uneven surface on the True Ceiling?Mention treatment required in comments",
+"Are there any utilities (sprinkler pipes, plumbing line, ducts) or cross beams running on the ceiling? Capture the beam bottom to floor mesurement(in mm), Sprinkler head to Floor measurement(in mm) and provide in the comments",
+"Is there any evidence of water leaks or moisture damage on the existing true ceiling?Mark on the layout as well and inform Cx",                    
+"Are the existing doors and door frame in good condition?",
+"Are the existing windows and window frames in good condition?",
+"Is existing wiring in good condition and does not require replacement?", 
+"Does the existing circuit have sufficient load capacity or will require change or new circuit?",                 
+"Are there any issues with the existing plumbing lines, such as leaks etc that require replacement or repair?",
 "Are existing plumbing lines old and outdated and may not be compatible with modern fixtures?",
 "Is the main inlet valve accesible?",
 "Is there sufficent space to provide Shower cubicle?",
-"Is it possible to relocate the WC, without any modifications to external pipeline/drain line?",
-"Do we need to provide damp proof treament on walls?",
-"Do we need to provide weather proof treatment on walls which are exposed to external atmosphere?",
-"Is there existing countertop present?",
-"Are there any issues with the existing false ceiling, such as damage, sagging, or instability, that require removal and replacement?"]
-const wallQuestions=["Is the wall a load-bearing wall/Mivan Construction/Sheer wall?",
-"Is the wall dry wall/Gypsum wall?",
-"Are there major cracks that require structural repair?",
-"Does the existing wall surface have undulations or uneven surface, requiring leveling?",
-"Are the undulation more than 6 mm?",
-"Are there minor cracks/loose plaster requiring re plastering??",
-"Is there suitable location for core cut available?",
-"Are existing switch/socket in working condition?",
-"Can we re-use the existing module/switch board?",
-"Can split AC be installed post false ceiling w/o pockets?",
+"Is it possible to relocate the WC, without any modifications to external pipeline/drain line?"]
+const wallQuestions=["Is the wall a load-bearing wall/Mivan Construction/Sheer wall?Mark in the structural layout as well",
+"Is the wall dry wall/Gypsum wall?Mark in the structural layout as well",
+"Are there major cracks that require structural repair?Mark in the structural layout as well",
+"Are there Hairline crack/minor cracks/loose plaster requiring re plastering?? Mark in the structural layout as well",
+"Does the existing wall surface have undulations or uneven surface?Capture mesurements in measurement section",
+"Are there evidence of water seepage,dampness that require waterproofing treatment? Mark on the structural layout as well and inform Cx",
+"Is there a suitable location for core cut available?",
+"Are existing switch/socket in working condition?Capture Wall wise Modules and configuration in the comments and mark on layout",
+"Is there a AC point(low side works) provided?",
+"Can split AC be installed post false ceiling w/o pockets? Capture Wall wise Door/Window Soffit to Ceiling measurement in mesurement section",
 "Is panelling/pelmet required to be done for AC installation?",
 "Are there any darker shade on the wall?",
 "Is the existing paint in good condition, without excessive peeling, flaking, or bubbling?",
@@ -163,25 +180,46 @@ const wallQuestions=["Is the wall a load-bearing wall/Mivan Construction/Sheer w
 const defaultRooms=["Living Room","Kitchen","Bedroom 1","Bedroom 2","Bathroom 1","Bathroom 2","Balcony"]
 
 let roomOrder=[...defaultRooms]
-
 let data=JSON.parse(localStorage.getItem("validatorData")||"{}")
 
 function normalizeData(){
 if(!data.rooms)data.rooms={}
 defaultRooms.forEach(r=>{
-if(!data.rooms[r])data.rooms[r]={room:{},wall:{},wallSel:{}}
+if(!data.rooms[r])data.rooms[r]={room:{},wall:{},wallSel:{},measurement:{},photos: {
+  "NW": [],
+  "EW": [],
+  "SW": [],
+  "WW": [],
+  "Ceiling": [],
+  "Floor": []
+}}
 })
 }
 normalizeData()
 
 function saveData(){
 data.project={pid:pid.value,cx:cx.value,city:city.value,address:address.value,society:society.value,flat:flat.value,floorNo:floorNo.value}
-data.constraints={serviceLiftUsage:serviceLiftUsage.value,loadingArea:loadingArea.value,debrisDumping:debrisDumping.value,vehicleEntry:vehicleEntry.value,societyRestrictions:societyRestrictions.value}
+data.constraints={}
+
+societyQuestions.forEach(q=>{
+let el=document.getElementById(q.key)
+if(el) data.constraints[q.key]=el.value
+})
 localStorage.setItem("validatorData",JSON.stringify(data))
 }
 
 function renderTabs(activeRoom){
-roomTabs.innerHTML=roomOrder.map(r=>`<span class="roomTab" onclick="openRoom('${r}')">${r}</span>`).join("")
+
+const container = document.getElementById("roomTabs")
+
+container.innerHTML = roomOrder.map(r=>`
+<span class="roomTab" 
+style="${r===activeRoom ? 'background:#1e3d8f;color:white' : ''}"
+onclick="openRoom('${r}')">
+${r}
+</span>
+`).join("");
+
 }
 
 function scrollToNext(currentDiv){
@@ -192,6 +230,38 @@ el.scrollIntoView({behavior:"smooth",block:"center"})
 break
 }
 }
+}
+
+/* 🔥 TOGGLE FUNCTION */
+function createToggle(value,onChange){
+let div=document.createElement("div")
+div.className="toggleGroup"
+
+let options=["Yes","No","NA"]
+
+options.forEach(opt=>{
+let btn=document.createElement("div")
+btn.className="toggleBtn"
+btn.innerText=opt
+
+btn.onclick=()=>{
+div.querySelectorAll(".toggleBtn").forEach(b=>b.classList.remove("active","yes","no","na"))
+
+btn.classList.add("active")
+btn.classList.add(opt.toLowerCase())
+
+onChange(opt)
+}
+
+if(value===opt){
+btn.classList.add("active")
+btn.classList.add(opt.toLowerCase())
+}
+
+div.appendChild(btn)
+})
+
+return div
 }
 
 function applyAllWalls(value, room){
@@ -209,31 +279,30 @@ renderTabs(room)
 const container=document.getElementById("roomForm")
 container.innerHTML=""
 
-let totalQ=roomQuestions.length+wallQuestions.length
-let answered=0
-wallQuestions.forEach(q=>{if(r.wall[q])answered++})
-roomQuestions.forEach(q=>{if(r.room[q])answered++})
-
-let percent=Math.round((answered/totalQ)*100)
-
-container.innerHTML+=`
-<h3>${room} (${percent}% complete)</h3>
-<div class="progressBar"><div class="progressFill" style="width:${percent}%"></div></div>
-<div class="summaryBox"><b>Summary:</b> ${answered}/${totalQ} answered</div>
-`
-
 function createAccordion(title){
 let acc=document.createElement("div")
 acc.className="accordion"
 acc.textContent=title
 let content=document.createElement("div")
 content.className="accordionContent"
-acc.onclick=()=>{content.style.display=content.style.display==="block"?"none":"block"}
+let isOpen = data.uiState?.[title] || false
+
+acc.onclick=()=>{
+isOpen = !isOpen
+if(!data.uiState) data.uiState={}
+data.uiState[title] = isOpen
+content.style.display = isOpen ? "block" : "none"
+}
+acc.onclick=()=>{
+isOpen = !isOpen
+content.style.display = isOpen ? "block" : "none"
+}
 container.appendChild(acc)
 container.appendChild(content)
 return content
 }
 
+/* WALL */
 let wallSection=createAccordion("Wall Questions")
 
 wallSection.innerHTML+=`
@@ -241,7 +310,6 @@ wallSection.innerHTML+=`
 <button onclick="applyAllWalls('No','${room}')">Apply No to All</button>
 `
 
-/* ✅ WALL UI UPDATED */
 wallQuestions.forEach(q=>{
 let div=document.createElement("div")
 div.className="questionBlock "+(r.wall[q]?"statusAnswered":"statusPending")
@@ -249,49 +317,45 @@ div.className="questionBlock "+(r.wall[q]?"statusAnswered":"statusPending")
 let label=document.createElement("label")
 label.textContent=q
 
-let select=createYesNo(r.wall[q])
+let toggle=createToggle(r.wall[q], val=>{
+r.wall[q]=val
+saveData()
+div.className="questionBlock "+(val?"statusAnswered":"statusPending")
+scrollToNext(div)
+})
 
 let wallBox=document.createElement("div")
 wallBox.className="wallBox"
 
 walls.forEach(w=>{
-let lbl=document.createElement("label")
 let cb=document.createElement("input")
 cb.type="checkbox"
-
 let arr=r.wallSel[q]||[]
 cb.checked=arr.includes(w)
 
 cb.onchange=()=>{
 let arr=r.wallSel[q]||[]
-if(cb.checked){
-if(!arr.includes(w)) arr.push(w)
-}else{
-arr=arr.filter(x=>x!==w)
-}
+if(cb.checked){if(!arr.includes(w))arr.push(w)}
+else{arr=arr.filter(x=>x!==w)}
 r.wallSel[q]=arr
 saveData()
 }
-
-lbl.appendChild(cb)
-lbl.append(w)
-wallBox.appendChild(lbl)
+wallBox.append(cb,w)
 })
 
-let textarea=createTextarea(r.wall[q+"-c"])
+let textarea=document.createElement("textarea")
+textarea.value=r.wall[q+"-c"]||""
 
-select.onchange=()=>{
-r.wall[q]=select.value
+textarea.oninput=()=>{
+r.wall[q+"-c"]=textarea.value
 saveData()
-div.className="questionBlock "+(select.value?"statusAnswered":"statusPending")
-textarea.style.display=select.value==="No"?"none":"block"
-scrollToNext(div)
 }
 
-div.append(label,select,wallBox,textarea)
+div.append(label,toggle,wallBox,textarea)
 wallSection.appendChild(div)
 })
 
+/* ROOM */
 let roomSection=createAccordion("Room Questions")
 
 roomQuestions.forEach(q=>{
@@ -301,34 +365,80 @@ div.className="questionBlock "+(r.room[q]?"statusAnswered":"statusPending")
 let label=document.createElement("label")
 label.textContent=q
 
-let select=createYesNo(r.room[q])
-let textarea=createTextarea(r.room[q+"-c"])
-
-select.onchange=()=>{
-r.room[q]=select.value
+let toggle=createToggle(r.room[q], val=>{
+r.room[q]=val
 saveData()
-div.className="questionBlock "+(select.value?"statusAnswered":"statusPending")
-textarea.style.display=select.value==="No"?"none":"block"
+div.className="questionBlock "+(val?"statusAnswered":"statusPending")
 scrollToNext(div)
-}
-
-div.append(label,select,textarea)
-roomSection.appendChild(div)
 })
 
+let textarea=document.createElement("textarea")
+textarea.value=r.room[q+"-c"]||""
+
+textarea.oninput=()=>{
+r.room[q+"-c"]=textarea.value
+saveData()
 }
 
-function createYesNo(value){
-let select=document.createElement("select")
-select.innerHTML="<option></option><option>Yes</option><option>No</option>"
-select.value=value||""
-return select
+div.append(label,toggle,textarea)
+roomSection.appendChild(div)
+})
+/* 🔥 MEASUREMENT SECTION */
+let measureSection=createAccordion("Measurement Section")
+
+let m = r.measurement || {}
+r.measurement = m
+
+function createInput(labelText,key){
+
+let div=document.createElement("div")
+div.className="questionBlock"
+
+let label=document.createElement("label")
+label.innerText=labelText
+
+let input=document.createElement("input")
+input.type="number"
+input.placeholder="mm"
+input.value=m[key] || ""
+
+input.onchange=()=>{
+m[key]=parseFloat(input.value) || ""
+saveData()
 }
 
-function createTextarea(value){
-let t=document.createElement("textarea")
-t.value=value||""
-return t
+div.append(label,input)
+return div
+}
+
+
+measurementFields.forEach(f=>{
+measureSection.appendChild(createInput(f.label,f.key))
+})
+/* 🔥 PHOTO SECTION (ADVANCED) */
+let photoSection=createAccordion("Site Photographs")
+photoSection.setAttribute("data-section","photo")
+
+refreshPhotoSection(room) 
+/* ✅ NEXT ROOM BUTTON (CORRECT PLACE) */
+let index = roomOrder.indexOf(room)
+
+let nextBtn=document.createElement("button")
+
+if(index === roomOrder.length - 1){
+nextBtn.innerText="Finish ✔"
+}else{
+nextBtn.innerText=`Next: ${roomOrder[index+1]} →`
+}
+
+nextBtn.style.marginTop="10px"
+
+nextBtn.onclick=()=>goToNextRoom(room)
+
+container.appendChild(nextBtn)
+
+
+  
 }
 
 function generateExcel(){
@@ -346,19 +456,422 @@ rows.push({...data.project,...data.constraints,Room:room,Section:"Room",Item:k,V
 })
 })
 let wb=XLSX.utils.book_new()
+
+/* EXISTING SHEET */
 let ws=XLSX.utils.json_to_sheet(rows)
 XLSX.utils.book_append_sheet(wb,ws,"Validation Data")
-XLSX.writeFile(wb,"site_validation.xlsx")
+
+/* 🔥 NEW MEASUREMENT SHEET */
+let measureRows=[]
+
+Object.keys(data.rooms).forEach(room=>{
+let m=data.rooms[room].measurement || {}
+
+let row = {
+Room: room
 }
 
+measurementFields.forEach(f=>{
+row[f.key] = m[f.key] || ""
+})
+
+measureRows.push(row)
+console.log("Generating Excel...")
+})
+
+
+let ws2=XLSX.utils.json_to_sheet(measureRows)
+XLSX.utils.book_append_sheet(wb,ws2,"Measurements")
+
+XLSX.writeFile(wb,"site_validation.xlsx")
+}
+  
+function openCamera(surface, room){
+
+let input=document.createElement("input")
+input.type="file"
+input.accept="image/*"
+input.capture="environment"
+
+input.onchange=(e)=>{
+let file=e.target.files[0]
+if(file) processImage(file, surface, room)
+}
+
+input.click()
+}
+
+function processImage(file, surface, room){
+
+let reader = new FileReader()
+
+reader.onload = function(e){
+
+let img = new Image()
+img.src = e.target.result
+
+img.onload = function(){
+
+let canvas = document.createElement("canvas")
+let ctx = canvas.getContext("2d")
+
+let maxWidth = img.width   // 🔥 keep original size
+let scale = 1
+
+canvas.width = maxWidth
+canvas.height = img.height * scale
+
+ctx.drawImage(img,0,0,canvas.width,canvas.height)
+
+let quality = 0.6
+if(file.size > 2 * 1024 * 1024) quality = 0.4
+if(file.size > 5 * 1024 * 1024) quality = 0.3
+
+let compressed = canvas.toDataURL("image/jpeg", quality)
+
+/* 🔥 DIRECTLY OPEN EDITOR — DO NOT SAVE FIRST */
+openEditorDirect(compressed, surface, room)
+
+}
+}
+
+reader.readAsDataURL(file)
+}
+  
+function openEditorDirect(imgSrc, surface, room){
+if(document.getElementById("editorCanvas")){
+return
+}
+window.addEventListener("load", ()=>{
+document.body.style.overflow = "auto"
+})
+  /* 🔒 LOCK PAGE SCROLL */
+document.body.style.overflow = "hidden"
+
+let overlay = document.createElement("div")
+overlay.style.position = "fixed"
+overlay.style.top = 0
+overlay.style.left = 0
+overlay.style.width = "100%"
+overlay.style.height = "100%"
+overlay.style.background = "#000"
+overlay.style.zIndex = 9999
+
+overlay.innerHTML = `
+<div style="position:absolute;top:10px;left:10px;z-index:10;">
+<button id="drawBtn">Draw</button>
+<button id="textBtn">Text</button>
+<button id="saveBtn">Save</button>
+<button id="closeBtn">Close</button>
+</div>
+
+<canvas id="editorCanvas"></canvas>
+`
+
+document.body.appendChild(overlay)
+
+let canvas = overlay.querySelector("#editorCanvas")
+let ctx = canvas.getContext("2d")
+
+/* 🔥 CRITICAL: STOP SCROLL + ZOOM */
+canvas.style.touchAction = "none"
+
+/* STATE */
+let mode = "draw"
+let drawing = false
+function getCoords(e){
+const rect = canvas.getBoundingClientRect()
+
+const scaleX = canvas.width / rect.width
+const scaleY = canvas.height / rect.height
+
+return {
+x: (e.clientX - rect.left) * scaleX,
+y: (e.clientY - rect.top) * scaleY
+}
+}
+/* LOAD IMAGE */
+let img = new Image()
+img.src = imgSrc
+
+img.onload = () => {
+img.onerror = ()=>{
+alert("Image failed to load")
+document.body.style.overflow = "auto"
+document.body.removeChild(overlay)
+}
+/* 🔥 SIMPLE + CORRECT SIZE (NO DPR CONFUSION) */
+canvas.width = img.width
+canvas.height = img.height
+
+canvas.style.width = "100%"
+canvas.style.height = "auto"
+
+ctx.drawImage(img, 0, 0)
+}
+
+/* BUTTONS */
+overlay.querySelector("#drawBtn").onclick = () => mode = "draw"
+overlay.querySelector("#textBtn").onclick = () => mode = "text"
+
+/* DRAW (WORKS ON MOBILE + DESKTOP) */
+canvas.addEventListener("pointerdown", (e)=>{
+if(mode !== "draw") return
+
+drawing = true
+canvas.setPointerCapture(e.pointerId)
+
+ctx.beginPath()
+let p = getCoords(e)
+ctx.moveTo(p.x, p.y)
+})
+
+canvas.addEventListener("pointermove", (e)=>{
+if(!drawing || mode !== "draw") return
+
+ctx.lineCap = "round"
+ctx.lineJoin = "round"
+ctx.strokeStyle = "red"
+ctx.lineWidth = 3
+
+let p = getCoords(e)
+
+ctx.lineTo(p.x, p.y)
+ctx.stroke()
+
+ctx.beginPath()
+ctx.moveTo(p.x, p.y)
+})
+
+canvas.addEventListener("pointerup", (e)=>{
+drawing = false
+try{ canvas.releasePointerCapture(e.pointerId) }catch(err){}
+})
+
+canvas.addEventListener("pointercancel", ()=>{
+drawing = false
+})
+
+/* TEXT */
+canvas.addEventListener("click", (e)=>{
+if(mode === "text"){
+let txt = prompt("Enter note")
+if(txt){
+ctx.fillStyle = "red"
+ctx.font = "48px Arial"
+let p = getCoords(e)
+ctx.fillText(txt, p.x, p.y)
+}
+}
+})
+
+/* SAVE */
+overlay.querySelector("#saveBtn").onclick = () => {
+
+let finalImg = canvas.toDataURL("image/jpeg", 0.7)
+
+data.rooms[room].photos[surface].push(finalImg)
+
+saveData()
+refreshPhotoSection(room)
+
+/* 🔓 RESTORE SCROLL */
+document.body.style.overflow = "auto"
+
+document.body.removeChild(overlay)
+}
+
+/* CLOSE */
+overlay.querySelector("#closeBtn").onclick = () => {
+document.body.style.overflow = "auto"
+document.body.removeChild(overlay)
+}
+} 
 function addRoom(){
 let name=prompt("Room name")
 if(!name)return
+
 roomOrder.push(name)
-data.rooms[name]={room:{},wall:{},wallSel:{}}
+
+data.rooms[name]={
+room:{},
+wall:{},
+wallSel:{},
+measurement:{},
+photos:{
+"NW":[],
+"EW":[],
+"SW":[],
+"WW":[],
+"Ceiling":[],
+"Floor":[]
+}
+}
+
 renderTabs(name)
 }
 
+function saveAnnotated(room, surface, index, dataURL){
+
+data.rooms[room].photos[surface][index] = dataURL
+saveData()
+
+// 🔥 Only refresh photo section (no full re-render)
+refreshPhotoSection(room)
+
+}
+  
+  function goToNextRoom(currentRoom){
+
+let index = roomOrder.indexOf(currentRoom)
+
+if(index === -1) return
+
+// If last room → alert
+if(index === roomOrder.length - 1){
+alert("All rooms completed ✅")
+return
+}
+
+let nextRoom = roomOrder[index + 1]
+
+// Open next room
+openRoom(nextRoom)
+
+// Scroll to top
+window.scrollTo({top:0,behavior:"smooth"})
+}
+function renderSociety(){
+
+const container=document.getElementById("societyForm")
+container.innerHTML=""
+
+societyQuestions.forEach(q=>{
+
+let div=document.createElement("div")
+div.className="formGroup"
+
+let label=document.createElement("label")
+label.className="formLabel"
+label.innerText = q.label
+
+let input
+
+if(q.type==="textarea"){
+input=document.createElement("textarea")
+}else{
+input=document.createElement("select")
+input.innerHTML="<option></option>" + q.options.map(o=>`<option>${o}</option>`).join("")
+}
+
+input.id=q.key
+input.value=(data.constraints && data.constraints[q.key]) || ""
+
+input.onchange=saveData
+
+div.append(label,input)
+container.appendChild(div)
+
+})
+
+}
+ 
+function refreshPhotoSection(room){
+
+let r = data.rooms[room]
+
+/* GET PHOTO SECTION */
+let photoSection = document.querySelector("[data-section='photo']")
+
+if(!photoSection) return
+
+/* PRESERVE OPEN STATE */
+let wasOpen = photoSection && photoSection.style.display === "block"
+
+/* CLEAR */
+photoSection.innerHTML = ""
+
+const surfaces = ["NW","EW","SW","WW","Ceiling","Floor"]
+
+surfaces.forEach(surface=>{
+
+let block=document.createElement("div")
+block.className="questionBlock"
+
+/* TITLE */
+let title=document.createElement("label")
+title.innerText=surface
+block.appendChild(title)
+
+/* ADD BUTTON */
+let btn=document.createElement("button")
+btn.innerText="Add Photo"
+btn.onclick=()=>openCamera(surface, room)
+block.appendChild(btn)
+
+/* IMAGE LIST */
+let list=document.createElement("div")
+list.style.display="flex"
+list.style.flexWrap="wrap"
+list.style.gap="8px"
+
+let photos = r.photos[surface] || []
+
+photos.forEach((photo, idx)=>{
+
+/* WRAPPER */
+let wrapper = document.createElement("div")
+wrapper.style.position = "relative"
+wrapper.style.display = "inline-block"
+
+/* IMAGE */
+let img=document.createElement("img")
+img.src = photo
+img.style.width="80px"
+img.style.cursor="pointer"
+
+img.onclick=()=>openEditorDirect(photo, surface, room)
+
+/* DELETE BUTTON */
+let del=document.createElement("div")
+del.innerText="✕"
+del.style.position="absolute"
+del.style.top="0"
+del.style.right="0"
+del.style.background="red"
+del.style.color="white"
+del.style.cursor="pointer"
+del.style.fontSize="12px"
+del.style.padding="2px 5px"
+del.style.borderRadius="0 6px 0 6px"
+
+/* DELETE ACTION */
+del.onclick=(e)=>{
+e.stopPropagation()
+
+if(confirm("Delete this photo?")){
+data.rooms[room].photos[surface].splice(idx,1)
+saveData()
+refreshPhotoSection(room)
+}
+}
+
+/* APPEND */
+wrapper.appendChild(img)
+wrapper.appendChild(del)
+
+list.appendChild(wrapper)
+})
+
+block.appendChild(list)
+photoSection.appendChild(block)
+})
+
+/* RESTORE STATE */
+if(wasOpen){
+photoSection.style.display = "block"
+}
+}
 function resetData(){
 localStorage.clear()
 location.reload()
@@ -367,8 +880,18 @@ location.reload()
 document.addEventListener("DOMContentLoaded",()=>{
 renderTabs(defaultRooms[0])
 openRoom(defaultRooms[0])
+renderSociety()
 })
-
+window.addEventListener("message", function(event){
+if(event.data.type==="ANNOTATION_SAVE"){
+saveAnnotated(
+event.data.room,
+event.data.surface,
+event.data.index,
+event.data.data
+)
+}
+})
 </script>
 
 </body>
