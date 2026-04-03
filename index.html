@@ -581,7 +581,12 @@ function openEditor(surface, room, index){
 
 let imgSrc = data.rooms[room].photos[surface][index]
 
-let win = window.open()
+let win = window.open("", "_blank")
+
+if(!win){
+alert("Popup blocked. Please allow popups.")
+return
+}
 
 win.document.write(`
 <html>
@@ -605,13 +610,18 @@ img.src="${imgSrc}"
 let drawing=false
 let mode="draw"
 
+/* LOAD IMAGE */
 img.onload=function(){
 canvas.width=img.width
 canvas.height=img.height
 ctx.drawImage(img,0,0)
 }
 
-/* 🔥 FIXED DRAW LOGIC */
+img.onerror=function(){
+alert("Image failed to load")
+}
+
+/* DRAW */
 canvas.onmousedown=(e)=>{
 drawing=true
 ctx.beginPath()
@@ -619,18 +629,25 @@ ctx.moveTo(e.offsetX,e.offsetY)
 }
 
 canvas.onmouseup=()=>drawing=false
+canvas.onmouseleave=()=>drawing=false
 
 canvas.onmousemove=(e)=>{
-if(drawing && mode==="draw"){
-ctx.lineTo(e.offsetX,e.offsetY)
+if(!drawing || mode!=="draw") return
+
+ctx.lineCap="round"
+ctx.lineJoin="round"
 ctx.strokeStyle="red"
 ctx.lineWidth=3
+
+ctx.lineTo(e.offsetX,e.offsetY)
 ctx.stroke()
-}
+
+ctx.beginPath()
+ctx.moveTo(e.offsetX,e.offsetY)
 }
 
-/* TEXT */
-canvas.onclick=(e)=>{
+/* TEXT (SAFE — NO CONFLICT WITH DRAW) */
+canvas.ondblclick=(e)=>{
 if(mode==="text"){
 let txt=prompt("Enter note")
 if(txt){
@@ -641,12 +658,20 @@ ctx.fillText(txt,e.offsetX,e.offsetY)
 }
 }
 
-/* SAVE */
+/* SAVE (FIXED METHOD) */
 function save(){
 let data=canvas.toDataURL("image/jpeg",0.7)
-if(window.opener && window.opener.saveAnnotated){
-  window.opener.saveAnnotated("${room}","${surface}",${index},data)
+
+if(window.opener){
+window.opener.postMessage({
+type:"ANNOTATION_SAVE",
+room:"${room}",
+surface:"${surface}",
+index:${index},
+data:data
+},"*")
 }
+
 window.close()
 }
 <\/script>
@@ -790,7 +815,16 @@ renderTabs(defaultRooms[0])
 openRoom(defaultRooms[0])
 renderSociety()
 })
-
+window.addEventListener("message", function(event){
+if(event.data.type==="ANNOTATION_SAVE"){
+saveAnnotated(
+event.data.room,
+event.data.surface,
+event.data.index,
+event.data.data
+)
+}
+})
 </script>
 
 </body>
