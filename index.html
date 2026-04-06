@@ -93,6 +93,7 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 const societyQuestions = [
 {key:"propertyType", label:"What is the type of property?", options:["Bare Shell","Property Less than 15 yrs","Property More than 15 yrs"]},
 {key:"serviceLiftUsage", label:"Service lift usage allowed?", options:["Yes,Heavy material movement allowed","Yes,Heavy material movement Not allowed","No"]},
+{key:"staircaseUsage", label:"What is vailable staricase width?", options:[">4ft","<4ft","Not accesible"]},
 {key:"loadingArea", label:"Debris/material loading area present?", options:["Within 30 ft","More than 30 ft","Not present"]},
 {key:"societyDemolish", label:"What kind of demolition is allowed?", options:["Mechanical","Manual","Mechanical or Manual"]},
 {key:"vehicleEntry", label:"Vehicle entry allowed inside the premises?", options:["Yes,small size","Yes,medium size","Yes,large size","No"]},
@@ -136,13 +137,15 @@ const measurementFields = [
 {label:"Door Soffit to Ceiling - EW", key:"soffitEW"},
 {label:"Door Soffit to Ceiling - SW", key:"soffitSW"},
 {label:"Door Soffit to Ceiling - WW", key:"soffitWW"},
-
+/* SUNKUN SLAB */
+{label:"Sunken slab depth", key:"sunkslabdepth"},
 /* WINDOW SOFFIT */
 {label:"Window Soffit to Ceiling - NW", key:"winSoffitNW"},
 {label:"Window Soffit to Ceiling - EW", key:"winSoffitEW"},
 {label:"Window Soffit to Ceiling - SW", key:"winSoffitSW"},
 {label:"Window Soffit to Ceiling - WW", key:"winSoffitWW"}
 
+  
 ]
 
 const roomQuestions=[
