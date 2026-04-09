@@ -545,44 +545,64 @@ store.delete(id)
   
 function generateExcel(){
 
+/* -----------------------------
+   SAFETY: NORMALIZE DATA
+------------------------------*/
+normalizeData()
+
+/* Ensure all rooms exist (extra safety) */
+roomOrder.forEach(room=>{
+if(!data.rooms[room]){
+data.rooms[room]={
+room:{},
+wall:{},
+wallSel:{},
+measurement:{},
+photos:{
+NW:[],EW:[],SW:[],WW:[],Ceiling:[],Floor:[]
+}
+}
+}
+})
+
 saveData()
 
 let rows=[]
 
 /* -----------------------------
-   ROOM + WALL DATA
+   ROOM + WALL DATA (FIXED)
 ------------------------------*/
 Object.keys(data.rooms).forEach(room=>{
 
-let r=data.rooms[room]
+let r = data.rooms[room]
 
-/* WALL */
-Object.entries(r.wall).forEach(([k,v])=>{
-if(k.endsWith("-c")) return
-
-rows.push({
-...data.project,
-Room:room,
-Section:"Wall",
-Item:k,
-Value:v,
-Walls:(r.wallSel[k]||[]).join(","),
-Comments:r.wall[k+"-c"]||""
-})
-})
-
-/* ROOM */
-Object.entries(r.room).forEach(([k,v])=>{
-if(k.endsWith("-c")) return
+/* -------- WALL QUESTIONS (ALL) -------- */
+wallQuestions.forEach(q=>{
 
 rows.push({
 ...data.project,
-Room:room,
-Section:"Room",
-Item:k,
-Value:v,
-Comments:r.room[k+"-c"]||""
+Room: room,
+Section: "Wall",
+Item: q,
+Value: r.wall[q] || "",
+Walls: (r.wallSel[q] || []).join(","),
+Comments: r.wall[q+"-c"] || ""
 })
+
+})
+
+/* -------- ROOM QUESTIONS (ALL) -------- */
+roomQuestions.forEach(q=>{
+
+rows.push({
+...data.project,
+Room: room,
+Section: "Room",
+Item: q,
+Value: r.room[q] || "",
+Comments: r.room[q+"-c"] || ""
+})
+
 })
 
 })
@@ -596,9 +616,8 @@ let wb = XLSX.utils.book_new()
 let ws = XLSX.utils.json_to_sheet(rows)
 XLSX.utils.book_append_sheet(wb, ws, "Validation Data")
 
-
 /* -----------------------------
-   MEASUREMENT SHEET
+   MEASUREMENTS (SAFE)
 ------------------------------*/
 let measureRows=[]
 
@@ -619,9 +638,8 @@ measureRows.push(row)
 let ws2 = XLSX.utils.json_to_sheet(measureRows)
 XLSX.utils.book_append_sheet(wb, ws2, "Measurements")
 
-
 /* -----------------------------
-   SOCIETY CONSTRAINTS (NEW)
+   SOCIETY CONSTRAINTS
 ------------------------------*/
 let constraintRows = []
 
@@ -638,11 +656,10 @@ Value: (data.constraints && data.constraints[q.key]) || ""
 let ws3 = XLSX.utils.json_to_sheet(constraintRows)
 XLSX.utils.book_append_sheet(wb, ws3, "Society Constraints")
 
-
 /* -----------------------------
-   EXPORT FILE
+   EXPORT
 ------------------------------*/
-XLSX.writeFile(wb,"site_validation.xlsx")
+XLSX.writeFile(wb, "site_validation.xlsx")
 
 }
 function openCamera(surface, room){
