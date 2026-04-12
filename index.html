@@ -359,26 +359,47 @@ function endValidation(){
         return
     }
 
-
     let req = indexedDB.deleteDatabase("SiteValidatorDB")
 
-   
     req.onsuccess = ()=>{
 
-    localStorage.clear()
+        // 🔥 CLEAR STORAGE
+        localStorage.clear()
 
-    // 🔥 FORCE UI RESET BEFORE RELOAD
-    document.getElementById("validationApp").style.display = "none"
-    document.getElementById("startValidationBtn").style.display = "block"
+        // 🔥 RESET DATA OBJECT (CRITICAL)
+        data = {
+            validationMeta: {
+                started: false,
+                ended: false,
+                excelGenerated: false,
+                imagesDownloaded: false
+            },
+            rooms: {}
+        }
 
-    document.getElementById("roomForm").innerHTML = ""
-    document.getElementById("roomTabs").innerHTML = ""
-    document.getElementById("societyForm").innerHTML = ""
+        // 🔥 RESET INPUT FIELDS
+        ["pid","cx","city","address","society","flat","floorNo"].forEach(id=>{
+            let el = document.getElementById(id)
+            if(el){
+                el.value = ""
+                el.disabled = false
+            }
+        })
 
-    window.location.reload()
+        // 🔥 RESET UI
+        document.getElementById("validationApp").style.display = "none"
+        document.getElementById("startValidationBtn").style.display = "block"
+        document.getElementById("endValidationBtn").style.display = "none"
 
-}
-    
+        document.getElementById("roomForm").innerHTML = ""
+        document.getElementById("roomTabs").innerHTML = ""
+        document.getElementById("societyForm").innerHTML = ""
+
+        // 🔥 DO NOT RELOAD (IMPORTANT)
+        // window.location.reload() ❌ REMOVE THIS
+
+        alert("Validation completed and reset successfully ✅")
+    }
 }
 function renderAppSections(){
 
