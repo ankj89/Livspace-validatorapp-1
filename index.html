@@ -235,7 +235,7 @@ const wallQuestions=["Is the wall a load-bearing wall/mivan construction/sheer w
 const defaultRooms=["Living Room","Kitchen","Bedroom 1","Bedroom 2","Bathroom 1","Bathroom 2","Balcony"]
 let approxSizeMB = parseFloat(localStorage.getItem("dbSizeMB") || "0")
 let db
-
+let isEndingValidation = false
 function initDB(){
 return new Promise((resolve, reject)=>{
 let request = indexedDB.open("SiteValidatorDB", 1)
@@ -359,8 +359,8 @@ function endValidation(){
         return
     }
 
-    // 🔥 Disable unload blocker (IMPORTANT)
-    window.onbeforeunload = null
+    // ✅ FLAG TO BYPASS BLOCKER
+    isEndingValidation = true
 
     let req = indexedDB.deleteDatabase("SiteValidatorDB")
 
@@ -368,7 +368,7 @@ function endValidation(){
 
         localStorage.clear()
 
-        // ✅ SIMPLE + RELIABLE RESET
+        // ✅ CLEAN HARD RESET
         location.reload()
     }
 }
@@ -1300,7 +1300,11 @@ saveData()
 renderAppSections()
 }
 
-window.onbeforeunload = function (e) {
+window.onbeforeunload = function () {
+
+    // ✅ ALLOW reload during END
+    if(isEndingValidation) return
+
     if(data.validationMeta?.started && !data.validationMeta?.ended){
         return "Validation in progress. Are you sure?"
     }
