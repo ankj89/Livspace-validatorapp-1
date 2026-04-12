@@ -292,9 +292,20 @@ localStorage.setItem("validatorData",JSON.stringify(data))
 }
 function startValidation(){
 
-    // ❌ BLOCK if previous not ended
+    // ⚠️ If previous session exists but not ended → give option
     if(data.validationMeta.started && !data.validationMeta.ended){
-        alert("Please complete previous validation (click End Validation)")
+
+        let proceed = confirm(
+            "Previous session detected.\n\nDo you want to reset and start a new validation?"
+        )
+
+        if(!proceed) return
+
+        // 🔥 FORCE RESET (without needing End button)
+        localStorage.removeItem("validatorData")
+        localStorage.removeItem("dbSizeMB")
+
+        location.reload()
         return
     }
 
