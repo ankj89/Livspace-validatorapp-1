@@ -78,18 +78,15 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 <input id="society" placeholder="Society Name" onchange="saveData()">
 <input id="flat" placeholder="Flat No" onchange="saveData()">
 <input id="floorNo" placeholder="Floor No" onchange="saveData()">
-
+<button id="startValidationBtn" onclick="startValidation()">Start Validation</button>
 </div>
 </div>
   
+<div id="validationApp" style="display:none;">
+
 <div class="card">
 <h3>Work environment & Society Constraints</h3>
 <div id="societyForm" style="display:flex;flex-direction:column;gap:8px;"></div>
-</div>
-
-
-
-
 </div>
 
 <div class="card">
@@ -103,6 +100,7 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 <div class="card">
 <button onclick="generateExcel()">Generate Excel</button>
 <button onclick="downloadAllImages()">Download Images</button>
+<button id="endValidationBtn" onclick="endValidation()">End Validation</button>
 </div>
 
 </div>
@@ -261,6 +259,11 @@ request.onerror = reject
   
 let roomOrder=[...defaultRooms]
 let data=JSON.parse(localStorage.getItem("validatorData")||"{}")
+if (!data.validationMeta) data.validationMeta = {}
+
+if (data.validationMeta.started === undefined) data.validationMeta.started = false
+if (data.validationMeta.ended === undefined) data.validationMeta.ended = false
+  
 
 function normalizeData(){
 if(!data.rooms)data.rooms={}
@@ -287,7 +290,78 @@ if(el) data.constraints[q.key]=el.value
 })
 localStorage.setItem("validatorData",JSON.stringify(data))
 }
+function startValidation(){
 
+    if(!pid.value || !cx.value || !city.value){
+        alert("Please fill PID, Cx Name, City")
+        return
+    }
+
+    if(!confirm("Start validation? Project details will be locked.")){
+        return
+    }
+
+    data.validationMeta.started = true
+    data.validationMeta.startTime = new Date().toLocaleString()
+
+    saveData()
+    renderAppSections()
+}
+function endValidation(){
+
+    if(!data.validationMeta.started){
+        alert("Validation not started")
+        return
+    }
+
+    if(data.validationMeta.ended){
+        alert("Already completed")
+        return
+    }
+
+    if(!confirm("End validation? This will lock all data.")){
+        return
+    }
+
+    data.validationMeta.ended = true
+    data.validationMeta.endTime = new Date().toLocaleString()
+
+    saveData()
+    renderAppSections()
+
+    alert("Validation completed ✅")
+}
+function renderAppSections(){
+
+    let app = document.getElementById("validationApp")
+    let startBtn = document.getElementById("startValidationBtn")
+    let endBtn = document.getElementById("endValidationBtn")
+
+    if(data.validationMeta.started){
+
+        app.style.display = "block"
+        startBtn.style.display = "none"
+
+        if(data.validationMeta.ended){
+            endBtn.style.display = "none"
+        } else {
+            endBtn.style.display = "inline-block"
+        }
+
+    } else {
+
+        app.style.display = "none"
+        startBtn.style.display = "inline-block"
+        endBtn.style.display = "none"
+    }
+
+    // 🔒 Lock project fields after start
+    ["pid","cx","city","address","society","flat","floorNo"].forEach(id=>{
+        let el = document.getElementById(id)
+        if(el) el.disabled = data.validationMeta.started
+    })
+}
+  
 function renderTabs(activeRoom){
 
 const container = document.getElementById("roomTabs")
@@ -352,7 +426,10 @@ openRoom(room)
 }
 
 function openRoom(room){
-
+if(data.validationMeta?.ended){
+    alert("Validation completed. Editing disabled.")
+    return
+}
 const r=data.rooms[room]
 renderTabs(room)
 
@@ -550,22 +627,17 @@ store.delete(id)
   
 function generateExcel(){
 
-/* -----------------------------
-   SAFETY: NORMALIZE DATA
-------------------------------*/
+if (!data.validationMeta) data.validationMeta = {}
+
+data.validationMeta.endTime = data.validationMeta.endTime || new Date().toLocaleString()
+
 normalizeData()
 
-/* Ensure all rooms exist (extra safety) */
 roomOrder.forEach(room=>{
 if(!data.rooms[room]){
 data.rooms[room]={
-room:{},
-wall:{},
-wallSel:{},
-measurement:{},
-photos:{
-NW:[],EW:[],SW:[],WW:[],Ceiling:[],Floor:[]
-}
+room:{},wall:{},wallSel:{},measurement:{},
+photos:{NW:[],EW:[],SW:[],WW:[],Ceiling:[],Floor:[]}
 }
 }
 })
@@ -574,16 +646,11 @@ saveData()
 
 let rows=[]
 
-/* -----------------------------
-   ROOM + WALL DATA (FIXED)
-------------------------------*/
 Object.keys(data.rooms).forEach(room=>{
 
 let r = data.rooms[room]
 
-/* -------- WALL QUESTIONS (ALL) -------- */
 wallQuestions.forEach(q=>{
-
 rows.push({
 ...data.project,
 Room: room,
@@ -593,12 +660,9 @@ Value: r.wall[q] || "",
 Walls: (r.wallSel[q] || []).join(","),
 Comments: r.wall[q+"-c"] || ""
 })
-
 })
 
-/* -------- ROOM QUESTIONS (ALL) -------- */
 roomQuestions.forEach(q=>{
-
 rows.push({
 ...data.project,
 Room: room,
@@ -607,30 +671,27 @@ Item: q,
 Value: r.room[q] || "",
 Comments: r.room[q+"-c"] || ""
 })
-
 })
 
 })
 
-/* -----------------------------
-   CREATE WORKBOOK
-------------------------------*/
 let wb = XLSX.utils.book_new()
 
-/* MAIN SHEET */
 let ws = XLSX.utils.json_to_sheet(rows)
 XLSX.utils.book_append_sheet(wb, ws, "Validation Data")
 
-/* -----------------------------
-   MEASUREMENTS (SAFE)
-------------------------------*/
+/* ✅ MEASUREMENT WITH TIMESTAMPS */
 let measureRows=[]
 
 Object.keys(data.rooms).forEach(room=>{
 
 let m = data.rooms[room].measurement || {}
 
-let row = { Room: room }
+let row = { 
+    Room: room,
+    Validation_Start: data.validationMeta?.startTime || "",
+    Validation_End: data.validationMeta?.endTime || ""
+}
 
 measurementFields.forEach(f=>{
 row[f.key] = m[f.key] || ""
@@ -643,43 +704,32 @@ measureRows.push(row)
 let ws2 = XLSX.utils.json_to_sheet(measureRows)
 XLSX.utils.book_append_sheet(wb, ws2, "Measurements")
 
-/* -----------------------------
-   SOCIETY CONSTRAINTS
-------------------------------*/
+/* ✅ SUMMARY SHEET */
+let summary = [{
+PID: data.project?.pid || "",
+Cx: data.project?.cx || "",
+Start_Time: data.validationMeta?.startTime || "",
+End_Time: data.validationMeta?.endTime || ""
+}]
+
+let wsSummary = XLSX.utils.json_to_sheet(summary)
+XLSX.utils.book_append_sheet(wb, wsSummary, "Summary")
+
+/* CONSTRAINTS */
 let constraintRows = []
 
 societyQuestions.forEach(q=>{
-
 constraintRows.push({
 Category: q.category,
 Question: q.label,
 Value: (data.constraints && data.constraints[q.key]) || ""
 })
-
 })
 
 let ws3 = XLSX.utils.json_to_sheet(constraintRows)
 XLSX.utils.book_append_sheet(wb, ws3, "Society Constraints")
 
-/* -----------------------------
-   EXPORT
-------------------------------*/
 XLSX.writeFile(wb, "site_validation.xlsx")
-
-}
-function openCamera(surface, room){
-
-let input=document.createElement("input")
-input.type="file"
-input.accept="image/*"
-input.capture="environment"
-
-input.onchange=(e)=>{
-let file=e.target.files[0]
-if(file) processImage(file, surface, room)
-}
-
-input.click()
 }
 
 function processImage(file, surface, room){
@@ -1184,9 +1234,14 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
 await initDB()
 
-renderTabs(defaultRooms[0])
-openRoom(defaultRooms[0])
 renderSociety()
+renderAppSections()
+
+if(data.validationMeta?.started){
+    renderTabs(defaultRooms[0])
+    openRoom(defaultRooms[0])
+}
+
 })
 window.addEventListener("message", function(event){
 if(event.data.type==="ANNOTATION_SAVE"){
