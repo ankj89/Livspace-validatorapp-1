@@ -359,46 +359,43 @@ function endValidation(){
         return
     }
 
-    // 🔥 DELETE DB
-    let req = indexedDB.deleteDatabase("SiteValidatorDB")
+    // 🔥 DELETE DB (DON'T WAIT)
+    indexedDB.deleteDatabase("SiteValidatorDB")
 
-    req.onsuccess = ()=>{
+    // 🔥 CLEAR STORAGE
+    localStorage.removeItem("validatorData")
+    localStorage.removeItem("dbSizeMB")
 
-        // 🔥 CLEAR STORAGE
-        localStorage.removeItem("validatorData")
-        localStorage.removeItem("dbSizeMB")
-
-        // 🔥 HARD RESET DATA
-        data = {
-            validationMeta: {
-                started: false,
-                ended: false,
-                excelGenerated: false,
-                imagesDownloaded: false
-            },
-            rooms: {}
-        }
-
-        // 🔥 CLEAR INPUTS
-        ["pid","cx","city","address","society","flat","floorNo"].forEach(id=>{
-            let el = document.getElementById(id)
-            if(el){
-                el.value = ""
-                el.disabled = false
-            }
-        })
-
-        // 🔥 RESET UI
-        document.getElementById("validationApp").style.display = "none"
-        document.getElementById("startValidationBtn").style.display = "block"
-        document.getElementById("endValidationBtn").style.display = "none"
-
-        document.getElementById("roomForm").innerHTML = ""
-        document.getElementById("roomTabs").innerHTML = ""
-        document.getElementById("societyForm").innerHTML = ""
-
-        alert("Reset successful ✅")
+    // 🔥 RESET DATA
+    data = {
+        validationMeta: {
+            started: false,
+            ended: false,
+            excelGenerated: false,
+            imagesDownloaded: false
+        },
+        rooms: {}
     }
+
+    // 🔥 CLEAR INPUTS
+    ["pid","cx","city","address","society","flat","floorNo"].forEach(id=>{
+        let el = document.getElementById(id)
+        if(el){
+            el.value = ""
+            el.disabled = false
+        }
+    })
+
+    // 🔥 RESET UI
+    document.getElementById("validationApp").style.display = "none"
+    document.getElementById("startValidationBtn").style.display = "block"
+    document.getElementById("endValidationBtn").style.display = "none"
+
+    document.getElementById("roomForm").innerHTML = ""
+    document.getElementById("roomTabs").innerHTML = ""
+    document.getElementById("societyForm").innerHTML = ""
+
+    alert("Reset successful ✅")
 }
 function renderAppSections(){
 
