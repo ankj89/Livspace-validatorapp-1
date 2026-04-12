@@ -292,52 +292,66 @@ localStorage.setItem("validatorData",JSON.stringify(data))
 }
 function startValidation(){
 
+    // ❌ BLOCK if previous not ended
+    if(data.validationMeta.started && !data.validationMeta.ended){
+        alert("Please complete previous validation (click End Validation)")
+        return
+    }
+
     if(!pid.value || !cx.value || !city.value){
         alert("Please fill PID, Cx Name, City")
         return
     }
 
-    if(!confirm("Start validation? Project details will be locked.")){
+    if(!confirm("Start validation?")){
         return
     }
 
-    data.validationMeta.started = true
-    data.validationMeta.ended = false
-    data.validationMeta.startTime = new Date().toLocaleString()
+    data.validationMeta = {
+        started: true,
+        ended: false,
+        excelGenerated: false,
+        imagesDownloaded: false,
+        startTime: new Date().toLocaleString()
+    }
 
     saveData()
 
     renderAppSections()
-
-    // ✅ CRITICAL FIX (THIS WAS MISSING)
     renderSociety()
-
     renderTabs(defaultRooms[0])
     openRoom(defaultRooms[0])
 }
 function endValidation(){
 
-    if(!data.validationMeta.started){
-        alert("Validation not started")
+    if(!data.validationMeta.excelGenerated || !data.validationMeta.imagesDownloaded){
+        alert("Please generate Excel and download images before ending validation")
         return
     }
 
-    if(data.validationMeta.ended){
-        alert("Already completed")
+    if(!confirm("End validation and reset app?")){
         return
     }
 
-    if(!confirm("End validation? This will lock all data.")){
-        return
-    }
-
-    data.validationMeta.ended = true
+    // ✅ CAPTURE END TIME
     data.validationMeta.endTime = new Date().toLocaleString()
 
-    saveData()
-    renderAppSections()
+    // OPTIONAL: you can store history here if needed
 
-    alert("Validation completed ✅")
+    // 🔥 HARD RESET
+    let req = indexedDB.deleteDatabase("SiteValidatorDB")
+
+    req.onsuccess = ()=>{
+
+        localStorage.removeItem("validatorData")
+        localStorage.removeItem("dbSizeMB")
+
+        // Reset runtime variables
+        data = {}
+        roomOrder = [...defaultRooms]
+
+        location.reload()
+    }
 }
 function renderAppSections(){
 
@@ -350,13 +364,15 @@ function renderAppSections(){
         app.style.display = "block"
         startBtn.style.display = "none"
 
-        if(data.validationMeta.ended){
-            endBtn.style.display = "none"
-        } else {
+        // ✅ SHOW END ONLY AFTER BOTH DONE
+        if(data.validationMeta.excelGenerated && data.validationMeta.imagesDownloaded){
             endBtn.style.display = "inline-block"
+        } else {
+            endBtn.style.display = "none"
         }
+
         renderSociety()
-        // ✅ ALWAYS ensure tabs visible
+
         if(roomOrder.length > 0){
             renderTabs(roomOrder[0])
         }
@@ -368,7 +384,6 @@ function renderAppSections(){
         endBtn.style.display = "none"
     }
 
-    // 🔒 Lock project fields
     ["pid","cx","city","address","society","flat","floorNo"].forEach(id=>{
         let el = document.getElementById(id)
         if(el) el.disabled = data.validationMeta.started
@@ -749,6 +764,10 @@ let ws3 = XLSX.utils.json_to_sheet(constraintRows)
 XLSX.utils.book_append_sheet(wb, ws3, "Society Constraints")
 
 XLSX.writeFile(wb, "site_validation.xlsx")
+
+data.validationMeta.excelGenerated = true
+saveData()
+renderAppSections()
 }
 
 function processImage(file, surface, room){
@@ -1257,20 +1276,35 @@ document.body.removeChild(a)
 }
 
 alert("All images downloaded ✅")
-
+data.validationMeta.imagesDownloaded = true
+saveData()
+renderAppSections()
 }
 
+window.addEventListener("beforeunload", function (e) {
+    if(data.validationMeta?.started && !data.validationMeta?.ended){
+        e.preventDefault()
+        e.returnValue = "Validation in progress. Are you sure?"
+    }
+})
 document.addEventListener("DOMContentLoaded", async ()=>{
 
 await initDB()
 
-renderSociety()
 normalizeData()
-renderAppSections()
 
+// ✅ Restore UI properly
 if(data.validationMeta?.started){
-    renderTabs(defaultRooms[0])
-    openRoom(defaultRooms[0])
+
+    renderAppSections()
+    renderSociety()
+    renderTabs(roomOrder[0])
+    openRoom(roomOrder[0])
+
+} else {
+
+    renderSociety()
+    renderAppSections()
 }
 
 })
