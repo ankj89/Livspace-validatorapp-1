@@ -258,11 +258,20 @@ request.onerror = reject
 }  
   
 let roomOrder=[...defaultRooms]
-let data=JSON.parse(localStorage.getItem("validatorData")||"{}")
-if (!data.validationMeta) data.validationMeta = {}
+let data = JSON.parse(localStorage.getItem("validatorData") || "null")
 
-if (data.validationMeta.started === undefined) data.validationMeta.started = false
-if (data.validationMeta.ended === undefined) data.validationMeta.ended = false
+// ✅ If no data → true fresh start
+if(!data){
+    data = {
+        validationMeta: {
+            started: false,
+            ended: false,
+            excelGenerated: false,
+            imagesDownloaded: false
+        },
+        rooms: {}
+    }
+}
   
 
 function normalizeData(){
@@ -291,23 +300,7 @@ if(el) data.constraints[q.key]=el.value
 localStorage.setItem("validatorData",JSON.stringify(data))
 }
 function startValidation(){
-
-    // ⚠️ If previous session exists but not ended → give option
-    if(data.validationMeta.started && !data.validationMeta.ended){
-
-        let proceed = confirm(
-            "Previous session detected.\n\nDo you want to reset and start a new validation?"
-        )
-
-        if(!proceed) return
-
-        // 🔥 FORCE RESET (without needing End button)
-        localStorage.removeItem("validatorData")
-        localStorage.removeItem("dbSizeMB")
-
-        location.reload()
-        return
-    }
+   
 
     if(!pid.value || !cx.value || !city.value){
         alert("Please fill PID, Cx Name, City")
@@ -344,24 +337,18 @@ function endValidation(){
         return
     }
 
-    // ✅ CAPTURE END TIME
+    // Capture end time (optional logging)
     data.validationMeta.endTime = new Date().toLocaleString()
 
-    // OPTIONAL: you can store history here if needed
-
-    // 🔥 HARD RESET
+    // 🔥 HARD RESET EVERYTHING
     let req = indexedDB.deleteDatabase("SiteValidatorDB")
 
     req.onsuccess = ()=>{
 
-        localStorage.removeItem("validatorData")
-        localStorage.removeItem("dbSizeMB")
+        localStorage.clear()   // ✅ IMPORTANT (not just removeItem)
 
-        // Reset runtime variables
-        data = {}
-        roomOrder = [...defaultRooms]
-
-        location.reload()
+        // 🔥 FORCE CLEAN STATE
+        window.location.href = window.location.pathname   // cleaner than reload
     }
 }
 function renderAppSections(){
@@ -1304,18 +1291,17 @@ await initDB()
 
 normalizeData()
 
-// ✅ Restore UI properly
-if(data.validationMeta?.started){
+// ✅ TRUE INITIAL STATE
+if(!data.validationMeta.started){
+
+    document.getElementById("validationApp").style.display = "none"
+
+} else {
 
     renderAppSections()
     renderSociety()
     renderTabs(roomOrder[0])
     openRoom(roomOrder[0])
-
-} else {
-
-    renderSociety()
-    renderAppSections()
 }
 
 })
