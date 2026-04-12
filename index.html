@@ -337,18 +337,20 @@ function endValidation(){
         return
     }
 
-    // Capture end time (optional logging)
+    // ✅ CAPTURE END TIME
     data.validationMeta.endTime = new Date().toLocaleString()
 
-    // 🔥 HARD RESET EVERYTHING
+    // (Optional: you can log this before clearing if needed)
+
     let req = indexedDB.deleteDatabase("SiteValidatorDB")
 
     req.onsuccess = ()=>{
 
-        localStorage.clear()   // ✅ IMPORTANT (not just removeItem)
+        // 🔥 HARD RESET
+        localStorage.clear()
 
-        // 🔥 FORCE CLEAN STATE
-        window.location.href = window.location.pathname   // cleaner than reload
+        // ✅ FORCE COMPLETE RELOAD (important difference)
+        window.location.reload(true)
     }
 }
 function renderAppSections(){
@@ -1285,26 +1287,55 @@ window.addEventListener("beforeunload", function (e) {
         e.returnValue = "Validation in progress. Are you sure?"
     }
 })
+
 document.addEventListener("DOMContentLoaded", async ()=>{
 
 await initDB()
 
-normalizeData()
+let stored = localStorage.getItem("validatorData")
 
-// ✅ TRUE INITIAL STATE
-if(!data.validationMeta.started){
+// ✅ TRUE CLEAN START
+if(!stored){
+
+    data = {
+        validationMeta: {
+            started: false,
+            ended: false,
+            excelGenerated: false,
+            imagesDownloaded: false
+        },
+        rooms: {}
+    }
+
+    normalizeData()
 
     document.getElementById("validationApp").style.display = "none"
+    document.getElementById("startValidationBtn").style.display = "block"
 
-} else {
+    return
+}
+
+// ✅ EXISTING SESSION
+data = JSON.parse(stored)
+
+normalizeData()
+
+if(data.validationMeta?.started){
 
     renderAppSections()
     renderSociety()
     renderTabs(roomOrder[0])
     openRoom(roomOrder[0])
+
+} else {
+
+    document.getElementById("validationApp").style.display = "none"
+    document.getElementById("startValidationBtn").style.display = "block"
 }
 
 })
+
+  
 window.addEventListener("message", function(event){
 if(event.data.type==="ANNOTATION_SAVE"){
 saveAnnotated(
