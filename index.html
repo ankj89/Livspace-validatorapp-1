@@ -288,6 +288,16 @@ if(!data.rooms[r])data.rooms[r]={room:{},wall:{},wallSel:{},measurement:{},photo
 })
 }
 normalizeData()
+function ensureValidationMeta(){
+    if(!data.validationMeta){
+        data.validationMeta = {
+            started: false,
+            ended: false,
+            excelGenerated: false,
+            imagesDownloaded: false
+        }
+    }
+}  
 
 function saveData(){
 data.project={pid:pid.value,cx:cx.value,city:city.value,address:address.value,society:society.value,flat:flat.value,floorNo:floorNo.value}
@@ -301,7 +311,7 @@ localStorage.setItem("validatorData",JSON.stringify(data))
 }
 function startValidation(){
    
-
+    ensureValidationMeta()  // ✅ ADD THIS
     if(!pid.value || !cx.value || !city.value){
         alert("Please fill PID, Cx Name, City")
         return
@@ -1311,7 +1321,7 @@ if(!stored){
         },
         rooms: {}
     }
-
+    ensureValidationMeta()
     normalizeData()
 
     document.getElementById("validationApp").style.display = "none"
@@ -1322,6 +1332,7 @@ if(!stored){
 
 // ✅ EXISTING SESSION
 data = JSON.parse(stored)
+ensureValidationMeta()
 
 normalizeData()
 
