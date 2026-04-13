@@ -1143,6 +1143,48 @@ container.appendChild(div)
 })
 
 }
+function startVersionWatcher(){
+
+    // 🔥 Current version = file last modified
+    let currentVersion = document.lastModified
+    localStorage.setItem("appVersion", currentVersion)
+
+    setInterval(async ()=>{
+
+        try{
+            let res = await fetch(window.location.href, { cache: "no-store" })
+
+            let newVersion = res.headers.get("Last-Modified")
+            if(!newVersion) return
+
+            let storedVersion = localStorage.getItem("appVersion")
+
+            if(newVersion !== storedVersion){
+
+                showUpdateBanner(newVersion)
+            }
+
+        }catch(err){
+            console.log("Version check failed")
+        }
+
+    }, 30000) // every 30 sec
+}
+function showUpdateBanner(newVersion){
+
+    let banner = document.getElementById("updateBanner")
+
+    banner.style.display = "block"
+
+    banner.onclick = ()=>{
+        localStorage.setItem("appVersion", newVersion)
+
+        // avoid unload warning
+        window.onbeforeunload = null
+
+        location.reload()
+    }
+}  
 function openCamera(surface, room){
 
     let input = document.createElement("input")
@@ -1469,6 +1511,7 @@ event.data.data
 )
 }
 })
+startVersionWatcher()  
 })
 </script>
 <div id="zipLoader" style="
@@ -1488,6 +1531,20 @@ text-align:center;
 ">
 <span id="zipText">Preparing...</span>
 </div>
-  
+<div id="updateBanner" style="
+position:fixed;
+bottom:0;
+left:0;
+width:100%;
+background:#1e3d8f;
+color:white;
+padding:12px;
+text-align:center;
+display:none;
+z-index:9999;
+cursor:pointer;
+">
+New version available. Tap to update.
+</div>  
 </body>
 </html>
