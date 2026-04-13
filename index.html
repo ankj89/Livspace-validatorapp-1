@@ -1148,7 +1148,19 @@ container.appendChild(div)
 }
 function startVersionWatcher(){
 
-    let currentVersion = document.querySelector('meta[name="app-version"]').content
+    function hashString(str){
+        let hash = 0
+        for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i)
+            hash |= 0
+        }
+        return hash.toString()
+    }
+
+    // 🔥 INITIAL HASH
+    let initialHTML = document.documentElement.innerHTML
+    let currentVersion = hashString(initialHTML)
+
     localStorage.setItem("appVersion", currentVersion)
 
     setInterval(async ()=>{
@@ -1157,12 +1169,7 @@ function startVersionWatcher(){
             let res = await fetch(window.location.href, { cache: "no-store" })
             let text = await res.text()
 
-            // 🔥 Extract version from HTML
-            let match = text.match(/meta name="app-version" content="(.*?)"/)
-
-            if(!match) return
-
-            let newVersion = match[1]
+            let newVersion = hashString(text)
             let storedVersion = localStorage.getItem("appVersion")
 
             if(newVersion !== storedVersion){
@@ -1173,7 +1180,7 @@ function startVersionWatcher(){
             console.log("Version check failed")
         }
 
-    }, 15000) // faster check (15 sec)
+    }, 10000)
 }
 function showUpdateBanner(newVersion){
 
@@ -1387,7 +1394,7 @@ async function downloadAllImages(){
 
                 let cleanRoom = room.replace(/[^a-zA-Z0-9]/g, "_")
 let fileName = `${cleanRoom}_${surface}_${i+1}.jpg`
-roomFolder.file(fileName, blob)
+
                 roomFolder.file(fileName, blob)
 
                 // 🔥 UPDATE PROGRESS
