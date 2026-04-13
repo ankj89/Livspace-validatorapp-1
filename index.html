@@ -1158,7 +1158,12 @@ function startVersionWatcher(){
     }
 
     // 🔥 INITIAL HASH
-    let initialHTML = document.documentElement.innerHTML
+    let currentVersion = localStorage.getItem("appVersion")
+
+if(!currentVersion){
+    currentVersion = hashString(document.documentElement.innerHTML)
+    localStorage.setItem("appVersion", currentVersion)
+}
     let currentVersion = hashString(initialHTML)
 
     localStorage.setItem("appVersion", currentVersion)
@@ -1166,12 +1171,13 @@ function startVersionWatcher(){
     setInterval(async ()=>{
 
         try{
-            let res = await fetch(window.location.href, { cache: "no-store" })
+            let res = await fetch(window.location.href + "?v=" + Date.now())
             let text = await res.text()
 
             let newVersion = hashString(text)
             let storedVersion = localStorage.getItem("appVersion")
-
+        console.log("OLD VERSION:", storedVersion)
+        console.log("NEW VERSION:", newVersion)
             if(newVersion !== storedVersion){
                 showUpdateBanner(newVersion)
             }
