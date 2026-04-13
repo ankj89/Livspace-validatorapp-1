@@ -785,7 +785,16 @@ Value: (data.constraints && data.constraints[q.key]) || ""
 let ws3 = XLSX.utils.json_to_sheet(constraintRows)
 XLSX.utils.book_append_sheet(wb, ws3, "Society Constraints")
 
-XLSX.writeFile(wb, "site_validation.xlsx")
+let pid = data.project?.pid || "PID"
+let cx = data.project?.cx || "Cx"
+
+// 🔥 Clean values (remove spaces/special chars)
+pid = pid.replace(/[^a-zA-Z0-9]/g, "_")
+cx = cx.replace(/[^a-zA-Z0-9]/g, "_")
+
+let fileName = `${pid}_${cx}_site_validation_data.xlsx`
+
+XLSX.writeFile(wb, fileName)
 
 data.validationMeta.excelGenerated = true
 saveData()
