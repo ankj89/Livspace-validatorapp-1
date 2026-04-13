@@ -1148,13 +1148,35 @@ container.appendChild(div)
 }
 function startVersionWatcher(){
 
-    let currentVersion = localStorage.getItem("appVersion")
+    setTimeout(async ()=>{
 
-    if(!currentVersion){
-        currentVersion = "init"
-        localStorage.setItem("appVersion", currentVersion)
-    }
+        try{
+            let res = await fetch("version.txt?v=" + Date.now())
+            let serverVersion = (await res.text()).trim()
 
+            let localVersion = localStorage.getItem("appVersion")
+
+            console.log("INIT CHECK → LOCAL:", localVersion, "SERVER:", serverVersion)
+
+            // 🔥 FIRST TIME SYNC
+            if(!localVersion){
+                localStorage.setItem("appVersion", serverVersion)
+                return
+            }
+
+            // 🔥 IF DIFFERENT → TRIGGER UPDATE
+            if(serverVersion !== localVersion){
+                showUpdateBanner(serverVersion)
+            }
+
+        }catch(err){
+            console.log("Initial version check failed", err)
+        }
+
+    }, 1000)
+
+
+    // 🔁 CONTINUOUS WATCH
     setInterval(async ()=>{
 
         try{
@@ -1163,8 +1185,7 @@ function startVersionWatcher(){
 
             let oldVersion = localStorage.getItem("appVersion")
 
-            console.log("OLD:", oldVersion)
-            console.log("NEW:", newVersion)
+            console.log("CHECK → OLD:", oldVersion, "NEW:", newVersion)
 
             if(newVersion !== oldVersion){
                 showUpdateBanner(newVersion)
