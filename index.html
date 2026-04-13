@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
- <meta name="app-version" content="1"> 
+ <meta name="app-version" content="v1.3.1">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Livspace-Site Validation Tool 1.3</title>
 
@@ -1148,25 +1148,8 @@ container.appendChild(div)
 }
 function startVersionWatcher(){
 
-    function hashString(str){
-        let hash = 0
-        for (let i = 0; i < str.length; i++) {
-            hash = ((hash << 5) - hash) + str.charCodeAt(i)
-            hash |= 0
-        }
-        return hash.toString()
-    }
-
-    // ✅ INITIAL VERSION SET (ONLY ONCE)
-    let storedVersion = localStorage.getItem("appVersion")
-
-    if(!storedVersion){
-        let initialHTML = document.documentElement.innerHTML
-        let initialHash = hashString(initialHTML)
-
-        localStorage.setItem("appVersion", initialHash)
-        storedVersion = initialHash
-    }
+    let currentVersion = document.querySelector('meta[name="app-version"]').content
+    localStorage.setItem("appVersion", currentVersion)
 
     setInterval(async ()=>{
 
@@ -1174,12 +1157,15 @@ function startVersionWatcher(){
             let res = await fetch(window.location.href + "?v=" + Date.now())
             let text = await res.text()
 
-            let newVersion = hashString(text)
+            let match = text.match(/meta name="app-version" content="(.*?)"/)
+
+            if(!match) return
+
+            let newVersion = match[1]
             let oldVersion = localStorage.getItem("appVersion")
 
-            // 🔥 DEBUG (KEEP FOR NOW)
-            console.log("OLD VERSION:", oldVersion)
-            console.log("NEW VERSION:", newVersion)
+            console.log("OLD:", oldVersion)
+            console.log("NEW:", newVersion)
 
             if(newVersion !== oldVersion){
                 showUpdateBanner(newVersion)
