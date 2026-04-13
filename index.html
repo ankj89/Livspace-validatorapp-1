@@ -366,7 +366,8 @@ function endValidation(){
 
     // 🔥 ADD RESET FLAG
     localStorage.setItem("forceReset", "true")
-
+    window.onbeforeunload = null
+    alert("Validation completed ✅") 
     // 🔥 HARD RELOAD
     location.reload()
 }
