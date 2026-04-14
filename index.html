@@ -840,9 +840,7 @@ openEditorDirect(compressed, surface, room)
 }
   
 async function openEditorDirect(imgSrc, surface, room, index = null){
-if(document.getElementById("editorCanvas")){
-return
-}
+
 
 document.body.style.overflow = "hidden"
 
@@ -882,10 +880,15 @@ document.body.removeChild(overlay)
 
 overlay.querySelector("#saveBtn").onclick = async () => {
 
-if(approxSizeMB > 80){
-alert("Storage almost full. Please delete some images.")
-return
-} 
+    // 🔥 ENSURE DB IS READY (ADD THIS)
+    if(!db){
+        await initDB()
+    }
+
+    if(approxSizeMB > 80){
+        alert("Storage almost full. Please delete some images.")
+        return
+    }
 let btn = overlay.querySelector("#saveBtn")
 btn.innerText = "Saving..."
 btn.disabled = true
@@ -1218,12 +1221,71 @@ function showUpdateBanner(newVersion){
         location.reload(true)
     }
 }  
-function openCamera(surface, room){
+async function openCamera(surface, room){
 
+    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+
+        try{
+            let stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" }
+            })
+
+            let overlay = document.createElement("div")
+            overlay.style.position = "fixed"
+            overlay.style.top = 0
+            overlay.style.left = 0
+            overlay.style.width = "100%"
+            overlay.style.height = "100%"
+            overlay.style.background = "#000"
+            overlay.style.zIndex = 9999
+
+            overlay.innerHTML = `
+                <video autoplay playsinline style="width:100%"></video>
+                <div style="position:fixed;bottom:20px;width:100%;text-align:center;">
+                    <button id="captureBtn">Capture</button>
+                    <button id="closeCam">Close</button>
+                </div>
+            `
+
+            document.body.appendChild(overlay)
+
+            let video = overlay.querySelector("video")
+            video.srcObject = stream
+
+            overlay.querySelector("#captureBtn").onclick = () => {
+
+                let canvas = document.createElement("canvas")
+                canvas.width = video.videoWidth
+                canvas.height = video.videoHeight
+
+                let ctx = canvas.getContext("2d")
+                ctx.drawImage(video, 0, 0)
+
+                let img = canvas.toDataURL("image/jpeg", 0.7)
+
+                stream.getTracks().forEach(t => t.stop())
+                document.body.removeChild(overlay)
+
+                openEditorDirect(img, surface, room)
+            }
+
+            overlay.querySelector("#closeCam").onclick = () => {
+                stream.getTracks().forEach(t => t.stop())
+                document.body.removeChild(overlay)
+            }
+
+            return
+
+        }catch(e){
+            console.log("Camera fallback", e)
+        }
+    }
+
+    // fallback
     let input = document.createElement("input")
     input.type = "file"
     input.accept = "image/*"
-    input.capture = "environment"   // mobile camera
+    input.capture = "environment"
 
     input.onchange = function(e){
         let file = e.target.files[0]
@@ -1363,7 +1425,15 @@ if(confirm("This will delete all data including photos. Continue?")){
         localStorage.removeItem("dbSizeMB")
 
         // ✅ FULL RESET
-        data = {}
+data = {
+    validationMeta:{
+        started:false,
+        ended:false,
+        excelGenerated:false,
+        imagesDownloaded:false
+    },
+    rooms:{}
+}
       
     }
 }
