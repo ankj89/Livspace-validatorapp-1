@@ -21,12 +21,14 @@ self.addEventListener("install", event => {
             let cache = await caches.open(CACHE_NAME);
 
             await cache.addAll([
-                "/",
-                "/index.html",
-                "/manifest.json",
-                "/version.txt",
-                "/xlsx.full.min.js",
-                "/jszip.min.js"
+                await cache.addAll([
+    "./",
+    "./index.html",
+    "./manifest.json",
+    "./version.txt",
+    "./xlsx.full.min.js",
+    "./jszip.min.js"
+]);
             ]);
 
             self.skipWaiting();
