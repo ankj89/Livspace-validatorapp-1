@@ -386,7 +386,7 @@ if(!pidVal || !cxVal || !cityVal){
     openRoom(defaultRooms[0])
 }
 async function endValidation(){
-
+await new Promise(r => setTimeout(r, 300))
     if(!data.validationMeta.excelGenerated || !data.validationMeta.imagesDownloaded){
         alert("Please generate Excel and download images before ending validation")
         return
@@ -1596,7 +1596,7 @@ if(!confirm("This will delete all data including photos. Continue?")){
 // 🔥 BLOCK UI (optional but good)
 document.body.innerHTML = "<h2 style='text-align:center;margin-top:40px'>Resetting app...</h2>"
 // 🔥 WAIT FOR DB TO FULLY CLOSE (iOS FIX)
-await new Promise(r => setTimeout(r, 300))
+
 // 🔥 DELETE DB PROPERLY
 let req = indexedDB.deleteDatabase("SiteValidatorDB")
 
