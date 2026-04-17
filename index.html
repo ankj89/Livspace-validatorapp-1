@@ -1058,7 +1058,7 @@ history.pushState({ editor: true }, "")
 let canvas = overlay.querySelector("#editorCanvas")
 let ctx = canvas.getContext("2d")
 
-canvas.style.touchAction = "autp"
+canvas.style.touchAction = "auto"
   /* CLOSE */
 overlay.querySelector("#closeBtn").onclick = () => {
     document.body.style.overflow = "auto"
@@ -1161,44 +1161,47 @@ overlay.querySelector("#drawBtn").onclick = () => mode = "draw"
 overlay.querySelector("#textBtn").onclick = () => mode = "text"
 
 /* DRAW (WORKS ON MOBILE + DESKTOP) */
+let lastX = 0
+let lastY = 0
+
 canvas.addEventListener("pointerdown", (e)=>{
-if(mode !== "draw") return
+    if(mode !== "draw") return
 
-drawing = true
-canvas.setPointerCapture(e.pointerId)
+    drawing = true
 
-ctx.beginPath()
-let p = getCoords(e)
-ctx.moveTo(p.x, p.y)
+    let p = getCoords(e)
+    lastX = p.x
+    lastY = p.y
 })
 
 canvas.addEventListener("pointermove", (e)=>{
-if(!drawing || mode !== "draw") return
+    if(!drawing || mode !== "draw") return
 
-ctx.lineCap = "round"
-ctx.lineJoin = "round"
-ctx.strokeStyle = "red"
-// 🔥 Dynamic thickness
-ctx.lineWidth = Math.max(3, canvas.width / 200)
+    let p = getCoords(e)
 
+    ctx.beginPath()
+    ctx.moveTo(lastX, lastY)
+    ctx.lineTo(p.x, p.y)
 
-let p = getCoords(e)
+    ctx.strokeStyle = "red"
+    ctx.lineWidth = Math.max(3, canvas.width / 200)
+    ctx.lineCap = "round"
 
-ctx.lineTo(p.x, p.y)
-ctx.stroke()
+    ctx.stroke()
 
-ctx.beginPath()
-ctx.moveTo(p.x, p.y)
+    lastX = p.x
+    lastY = p.y
 })
 
-canvas.addEventListener("pointerup", (e)=>{
-drawing = false
-try{ canvas.releasePointerCapture(e.pointerId) }catch(err){}
+canvas.addEventListener("pointerup", ()=>{
+    drawing = false
 })
 
 canvas.addEventListener("pointercancel", ()=>{
-drawing = false
+    drawing = false
 })
+
+ 
 
 /* TEXT */
 canvas.addEventListener("click", (e)=>{
