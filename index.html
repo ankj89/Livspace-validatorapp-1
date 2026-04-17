@@ -1070,7 +1070,7 @@ overlay.querySelector("#closeBtn").onclick = () => {
 
     isCameraOpen = false
 
-    history.back()
+   
 }
 
   
@@ -1519,7 +1519,7 @@ ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
     isCameraOpen = false
 
     // 🔥 FIX BACK STACK
-    history.back()
+
 }
 
             return
@@ -1686,34 +1686,47 @@ if(!confirm("This will delete all data including photos. Continue?")){
     return
 }
 
-// 🔥 BLOCK UI (optional but good)
-document.body.innerHTML = "<h2 style='text-align:center;margin-top:40px'>Resetting app...</h2>"
-// 🔥 WAIT FOR DB TO FULLY CLOSE (iOS FIX)
+// 🔥 SHOW LOADER (DO NOT DESTROY UI)
+let loader = document.createElement("div")
+loader.innerHTML = "Resetting app..."
+loader.style.position = "fixed"
+loader.style.top = "0"
+loader.style.left = "0"
+loader.style.width = "100%"
+loader.style.height = "100%"
+loader.style.background = "rgba(0,0,0,0.7)"
+loader.style.color = "white"
+loader.style.display = "flex"
+loader.style.alignItems = "center"
+loader.style.justifyContent = "center"
+loader.style.zIndex = "9999"
 
-// 🔥 DELETE DB PROPERLY
+document.body.appendChild(loader)
+
+// 🔥 CLOSE DB FIRST (CRITICAL)
+if(db){
+    db.close()
+}
+
+// 🔥 DELETE DB
 let req = indexedDB.deleteDatabase("SiteValidatorDB")
 
 req.onsuccess = ()=>{
-    console.log("DB deleted")
-
-    // 🔥 CLEAR MEMORY
-    data = null
-    roomOrder = [...defaultRooms]
-
-    // 🔥 CLEAR LOCAL STORAGE FLAGS
-    localStorage.removeItem("dbSizeMB")
-    localStorage.removeItem("appVersion")
-
-    // 🔥 HARD RELOAD CLEAN
-    location.href = location.origin + location.pathname
+    localStorage.clear()
+    location.reload()
 }
 
 req.onerror = ()=>{
-    alert("Reset failed. Try again.")
+    alert("Reset failed. Retrying fallback...")
+
+    localStorage.clear()
+    location.reload()
 }
 
 req.onblocked = ()=>{
-    alert("Please close other tabs of this app and try again.")
+    alert("Close other tabs of this app and retry")
+
+    document.body.removeChild(loader)
 }
 }
 async function downloadAllImages(){
@@ -1869,37 +1882,29 @@ if(data.validationMeta?.started){
 })
 window.addEventListener("popstate", function(event){
 
-    // 🔥 CAMERA HANDLING FIRST
     if(isCameraOpen){
-
-        let overlay = document.querySelector("div[style*='z-index: 9999']")
-        if(overlay){
-            overlay.remove()
-        }
-
-        isCameraOpen = false
-
-        history.pushState(null, "")
         return
     }
 
-    // 🔥 EXIT CONTROL
+    if(document.querySelector("#editorCanvas")){
+        return
+    }
+
     if(data.validationMeta?.started){
 
         let now = Date.now()
 
         if(now - backPressTime < 1500){
-            // ✅ EXIT
             window.onbeforeunload = null
             history.back()
         }else{
-            // ❌ STAY
-            alert("Press back again to exit")
+            alert("Press back again to exit app")
             backPressTime = now
             history.pushState(null, "")
         }
     }
 })
+ 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
 
