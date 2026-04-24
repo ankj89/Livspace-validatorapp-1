@@ -1632,14 +1632,11 @@ overlay.querySelector("#closeBtn").onclick = () => {
     document.body.style.overflow = "auto"
 
     canvas.replaceWith(canvas.cloneNode(true))
-    document.body.removeChild(overlay)
+    overlay.remove()
 
     isCameraOpen = false
 
-    // 🔥 FIX: clean navigation state
-    if(history.state && history.state.camera){
-        history.back()
-    }
+  
 }
 
   
@@ -1682,7 +1679,7 @@ refreshPhotoSection(room)
 
 document.body.style.overflow = "auto"
 canvas.replaceWith(canvas.cloneNode(true))
-document.body.removeChild(overlay)
+overlay.remove()
 
 }catch(err){
 console.error(err)
@@ -1711,7 +1708,7 @@ img.src = imgSrc
 
 img.onerror = ()=>{
 alert("Image failed to load")
-document.body.removeChild(overlay)
+overlay.remove()
 }
 
 img.onload = ()=>{
@@ -1726,7 +1723,9 @@ img.onload = ()=>{
     // 🔥 RESET ANY OLD TRANSFORMS
     ctx.setTransform(1,0,0,1,0,0)
 
+requestAnimationFrame(()=>{
     ctx.drawImage(img, 0, 0)
+})
 }
 
 /* BUTTONS */
@@ -2073,21 +2072,18 @@ ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
                 let img = canvas.toDataURL("image/jpeg", 0.7)
 
                 stream.getTracks().forEach(t => t.stop())
-                document.body.removeChild(overlay)
+                overlay.remove()
 
                 openEditorDirect(img, surface, room)
             }
 
     overlay.querySelector("#closeCam").onclick = () => {
     stream.getTracks().forEach(t => t.stop())
-    document.body.removeChild(overlay)
+    overlay.remove()
 
     isCameraOpen = false
 
-    // 🔥 FIX
-    if(history.state && history.state.camera){
-        history.back()
-    }
+   
 }
 
             return
@@ -2480,22 +2476,24 @@ document.getElementById("roomForm").innerHTML = "<div class='summaryBox'>Select 
 }
 
 })
-window.addEventListener("popstate", function(event){
+window.addEventListener("popstate", function(){
 
-   if(document.querySelector("#editorCanvas")){
-    // 🔥 close editor on back
-    let overlay = document.querySelector("#editorCanvas")?.parentElement?.parentElement
-    if(overlay){
-        overlay.remove()
-        document.body.style.overflow = "auto"
+    let canvas = document.querySelector("#editorCanvas")
+
+    if(canvas){
+        let overlay = canvas.parentElement
+        if(overlay){
+            overlay.remove()
+            document.body.style.overflow = "auto"
+        }
+        isCameraOpen = false
+        return
     }
-    isCameraOpen = false
-    return
-}
 
-if(isCameraOpen){
-    return
-}
+    if(isCameraOpen){
+        history.pushState(null, "")
+        return
+    }
 
     if(data.validationMeta?.started){
 
