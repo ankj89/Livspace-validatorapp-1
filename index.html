@@ -1591,231 +1591,126 @@ openEditorDirect(compressed, surface, room)
 }
 }
   
-async function openEditorDirect(imgSrc, surface, room, index = null){
+async function openEditorDirect(imgSrc, surface, room, index=null){
 
+    document.body.style.overflow = "hidden"
 
-document.body.style.overflow = "hidden"
+    let overlay = document.createElement("div")
+    overlay.id = "editorOverlay"
 
-let overlay = document.createElement("div")
-overlay.style.position = "fixed"
-overlay.style.top = 0
-overlay.style.left = 0
-overlay.style.width = "100%"
-overlay.style.height = "100%"
-overlay.style.background = "#000"
-overlay.style.zIndex = 9999
+    overlay.style.position = "fixed"
+    overlay.style.top = 0
+    overlay.style.left = 0
+    overlay.style.width = "100%"
+    overlay.style.height = "100%"
+    overlay.style.background = "#000"
+    overlay.style.zIndex = 10000
+    overlay.style.display = "flex"
+    overlay.style.flexDirection = "column"
 
-overlay.innerHTML = `
+    overlay.innerHTML = `
+        <div style="display:flex;gap:8px;padding:10px;background:#111;flex-wrap:wrap;">
+            <button id="drawBtn">✏️ Draw</button>
+            <button id="textBtn">🔤 Text</button>
+            <button id="saveBtn" style="background:#28a745;">💾 Save</button>
+            <button id="closeBtn" style="background:#dc3545;">✕ Close</button>
+        </div>
 
-<!-- TOOLBAR (NOW NORMAL FLOW — NOT FIXED) -->
-<div style="
-width:100%;
-display:flex;
-justify-content:center;
-gap:8px;
-background:rgba(0,0,0,0.8);
-padding:12px;
-flex-wrap:wrap;
-z-index:2;
-">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+            <canvas id="editorCanvas"></canvas>
+        </div>
+    `
 
-<button id="drawBtn" style="padding:10px 14px;">✏️ Draw</button>
-<button id="textBtn" style="padding:10px 14px;">🔤 Text</button>
-<button id="saveBtn" style="padding:10px 14px;background:#28a745;">💾 Save</button>
-<button id="closeBtn" style="padding:10px 14px;background:#dc3545;">✕ Close</button>
+    document.body.appendChild(overlay)
 
-</div>
+    let canvas = overlay.querySelector("#editorCanvas")
+    let ctx = canvas.getContext("2d")
 
-<!-- CANVAS WRAPPER -->
-<div style="flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;">
-<canvas id="editorCanvas"></canvas>
-</div>
-`
+    let img = new Image()
+    img.onload = ()=>{
+        canvas.width = img.width
+        canvas.height = img.height
+        canvas.style.width = "100%"
 
+        // 🔥 CRITICAL FIX
+        requestAnimationFrame(()=>{
+            ctx.drawImage(img,0,0)
+        })
+    }
+    img.src = imgSrc
 
-document.body.appendChild(overlay)
- isCameraOpen = true
-history.pushState({ editor: true }, "")
-let canvas = overlay.querySelector("#editorCanvas")
-let ctx = canvas.getContext("2d")
+    let drawing=false
+    let mode="draw"
 
-canvas.style.touchAction = "none"
-canvas.addEventListener("touchstart", e => e.preventDefault(), { passive:false })
-canvas.addEventListener("touchmove", e => e.preventDefault(), { passive:false })
- 
-  /* CLOSE */
-overlay.querySelector("#closeBtn").onclick = () => {
-
-    document.body.style.overflow = "auto"
-
-    canvas.replaceWith(canvas.cloneNode(true))
- history.back()
-
-    isCameraOpen = false
-
-  
-}
-
-  
-/* SAVE */
-
-overlay.querySelector("#saveBtn").onclick = async () => {
-
-    // 🔥 ENSURE DB IS READY (ADD THIS)
-    if(!db){
-        await initDB()
+    const getPos = e=>{
+        let r = canvas.getBoundingClientRect()
+        return {
+            x:(e.clientX-r.left)*(canvas.width/r.width),
+            y:(e.clientY-r.top)*(canvas.height/r.height)
+        }
     }
 
-    if(approxSizeMB > 80){
-        alert("Storage almost full. Please delete some images.")
-        return
-    }
-let btn = overlay.querySelector("#saveBtn")
-btn.innerText = "Saving..."
-btn.disabled = true
+    canvas.addEventListener("pointerdown", e=>{
+        if(mode==="draw"){
+            drawing=true
+            let p=getPos(e)
+            ctx.beginPath()
+            ctx.moveTo(p.x,p.y)
+        }
+        else if(mode==="text"){
+            let txt = prompt("Enter note")
+            if(txt){
+                let p=getPos(e)
+                ctx.fillStyle="red"
+                ctx.font="24px Arial"
+                ctx.fillText(txt,p.x,p.y)
+            }
+        }
+    })
 
-try{
+    canvas.addEventListener("pointermove", e=>{
+        if(!drawing) return
+        let p=getPos(e)
+        ctx.lineTo(p.x,p.y)
+        ctx.strokeStyle="red"
+        ctx.lineWidth=4
+        ctx.stroke()
+    })
 
-let finalImg = canvas.toDataURL("image/jpeg", 0.7)
+    canvas.addEventListener("pointerup", ()=>{
+        drawing=false
+        ctx.closePath()
+    })
 
+    overlay.querySelector("#drawBtn").onclick = ()=>mode="draw"
+    overlay.querySelector("#textBtn").onclick = ()=>mode="text"
 
-let id = "img_" + Date.now()
-
-await savePhotoToDB(id, finalImg)
-approxSizeMB += (finalImg.length * 0.75) / (1024*1024)
-localStorage.setItem("dbSizeMB", approxSizeMB)
-
-if(index !== null){
-data.rooms[room].photos[surface][index] = id
-}else{
-data.rooms[room].photos[surface].push(id)
-}
-
-saveData()
-refreshPhotoSection(room)
-
-document.body.style.overflow = "auto"
-canvas.replaceWith(canvas.cloneNode(true))
-overlay.remove()
-
-}catch(err){
-console.error(err)
-alert("Error saving image")
-btn.innerText = "Save"
-btn.disabled = false
-}
-}
-/* 🔥 CRITICAL: STOP SCROLL + ZOOM */
-
-
-/* STATE */
-let mode = "draw"
-let drawing = false
-function getCoords(e){
-    const rect = canvas.getBoundingClientRect()
-
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width)
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height)
-
-    return { x, y }
-}
-/* LOAD IMAGE */
-let img = new Image()
-img.src = imgSrc
-
-img.onerror = ()=>{
-alert("Image failed to load")
-overlay.remove()
-}
-
-img.onload = ()=>{
-
-    // ✅ Match canvas EXACTLY to displayed size
-    canvas.width = img.width
-    canvas.height = img.height
-
-    canvas.style.width = "100%"
-    canvas.style.height = "auto"
- 
-
-    // 🔥 RESET ANY OLD TRANSFORMS
-    ctx.setTransform(1,0,0,1,0,0)
-
-requestAnimationFrame(()=>{
-    ctx.drawImage(img, 0, 0)
-})
-}
-
-/* BUTTONS */
-overlay.querySelector("#drawBtn").onclick = () => mode = "draw"
-overlay.querySelector("#textBtn").onclick = () => mode = "text"
-
-/* DRAW (WORKS ON MOBILE + DESKTOP) */
-
-
-canvas.addEventListener("pointerdown", (e)=>{
-    if(mode !== "draw") return
-
-    drawing = true
-
-    const p = getCoords(e)
-
-    ctx.beginPath()
-    ctx.moveTo(p.x, p.y)
-})
-
-canvas.addEventListener("pointermove", (e)=>{
-    if(!drawing || mode !== "draw") return
-
-    const p = getCoords(e)
-
-    ctx.lineTo(p.x, p.y)
-
-    ctx.strokeStyle = "red"
-    ctx.lineWidth = 4
-    ctx.lineCap = "round"
-    ctx.lineJoin = "round"
-
-    ctx.stroke()
-})
-
-canvas.addEventListener("pointerup", ()=>{
-    drawing = false
-    ctx.closePath()
-})
-
-canvas.addEventListener("pointercancel", ()=>{
-    drawing = false
-    ctx.closePath()
-})
-
-
- 
-
-/* TEXT */
-canvas.addEventListener("pointerdown", (e)=>{
-
-    if(mode !== "text") return
-
-    // 🔥 STOP DRAW FROM ALSO TRIGGERING
-    e.preventDefault()
-
-    let txt = prompt("Enter note")
-
-    if(txt){
-
-        const p = getCoords(e)
-
-        ctx.fillStyle = "red"
-        ctx.font = `${Math.max(20, canvas.width / 25)}px Arial`
-        ctx.textBaseline = "top"
-
-        ctx.fillText(txt, p.x, p.y)
+    overlay.querySelector("#closeBtn").onclick = ()=>{
+        document.body.style.overflow="auto"
+        overlay.remove()
     }
 
-})
+    overlay.querySelector("#saveBtn").onclick = async ()=>{
 
+        if(!db) await initDB()
 
+        let imgData = canvas.toDataURL("image/jpeg",0.7)
+        let id = "img_"+Date.now()
+
+        await savePhotoToDB(id, imgData)
+
+        if(index!==null){
+            data.rooms[room].photos[surface][index]=id
+        }else{
+            data.rooms[room].photos[surface].push(id)
+        }
+
+        saveData()
+        refreshPhotoSection(room)
+
+        document.body.style.overflow="auto"
+        overlay.remove()
+    }
 }
 
 
@@ -2018,135 +1913,75 @@ function showUpdateBanner(newVersion){
 }  
 async function openCamera(surface, room){
 
-    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+    try{
+        let stream = await navigator.mediaDevices.getUserMedia({
+            video:{ facingMode:"environment" }
+        })
 
-        try{
-            let stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-  facingMode: "environment",
-  aspectRatio: 16/9
-}
-            })
+        let overlay = document.createElement("div")
+        overlay.id = "cameraOverlay"
 
-            let overlay = document.createElement("div")
-            overlay.style.position = "fixed"
-            overlay.style.top = 0
-            overlay.style.left = 0
-            overlay.style.width = "100%"
-            overlay.style.height = "100%"
-            overlay.style.background = "#000"
-            overlay.style.zIndex = 9999
-         overlay.style.display = "flex"
-overlay.style.flexDirection = "column"
+        overlay.style.position = "fixed"
+        overlay.style.top = 0
+        overlay.style.left = 0
+        overlay.style.width = "100%"
+        overlay.style.height = "100%"
+        overlay.style.background = "#000"
+        overlay.style.zIndex = 9999
 
-            overlay.innerHTML = `
-             <video autoplay playsinline 
-style="
-width:100%;
-height:100%;
-object-fit:cover;
-"></video>
-                <div style="position:fixed;bottom:20px;width:100%;text-align:center;">
-                    <button id="captureBtn">Capture</button>
-                    <button id="closeCam">Close</button>
-                </div>
-            `
+        overlay.innerHTML = `
+        <video autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video>
 
-            document.body.appendChild(overlay)
-            isCameraOpen = true
+        <div style="position:absolute;bottom:20px;width:100%;text-align:center;">
+            <button id="captureBtn">Capture</button>
+            <button id="closeCam">Close</button>
+        </div>
+        `
 
-            // 🔥 PUSH STATE
-            history.pushState({ camera: true }, "")
+        document.body.appendChild(overlay)
 
-            let video = overlay.querySelector("video")
-            video.srcObject = stream
+        let video = overlay.querySelector("video")
+        video.srcObject = stream
 
-            overlay.querySelector("#captureBtn").onclick = () => {
+        overlay.querySelector("#captureBtn").onclick = ()=>{
 
-          let canvas = document.createElement("canvas")
-let videoRatio = video.videoWidth / video.videoHeight
-let screenRatio = window.innerWidth / window.innerHeight
+            let canvas = document.createElement("canvas")
+            canvas.width = video.videoWidth
+            canvas.height = video.videoHeight
 
-let sx, sy, sw, sh
+            canvas.getContext("2d").drawImage(video,0,0)
 
-if(videoRatio > screenRatio){
-    // video wider → crop sides
-    sh = video.videoHeight
-    sw = sh * screenRatio
-    sx = (video.videoWidth - sw) / 2
-    sy = 0
-}else{
-    // video taller → crop top/bottom
-    sw = video.videoWidth
-    sh = sw / screenRatio
-    sx = 0
-    sy = (video.videoHeight - sh) / 2
-}
+            let img = canvas.toDataURL("image/jpeg",0.7)
 
-canvas.width = sw
-canvas.height = sh     
+            stream.getTracks().forEach(t=>t.stop())
+            overlay.remove()
 
-                let ctx = canvas.getContext("2d")
-ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
-
-                let img = canvas.toDataURL("image/jpeg", 0.7)
-
-                stream.getTracks().forEach(t => t.stop())
-                overlay.remove()
-
-                openEditorDirect(img, surface, room)
-            }
-
-    overlay.querySelector("#closeCam").onclick = () => {
-    stream.getTracks().forEach(t => t.stop())
-    overlay.remove()
-
-    isCameraOpen = false
-
-   
-}
-
-            return
-
+            openEditorDirect(img, surface, room)
         }
-      
-catch(e){
-    console.log("Camera fallback", e)
 
-    // 🔥 FORCE FILE INPUT (iOS SAFE)
-    let input = document.createElement("input")
-    input.type = "file"
-    input.accept = "image/*"
-    input.capture = "environment"
-
-    input.oninput = function(e){
-        let file = e.target.files[0]
-        if(file){
-            processImage(file, surface, room)
+        overlay.querySelector("#closeCam").onclick = ()=>{
+            stream.getTracks().forEach(t=>t.stop())
+            overlay.remove()
         }
-    }
 
-    input.click()
-    return
-}
-     
-    }
+    }catch(e){
 
-    // fallback
-    let input = document.createElement("input")
-    input.type = "file"
-    input.accept = "image/*"
-    input.capture = "environment"
+        // fallback
+        let input = document.createElement("input")
+        input.type = "file"
+        input.accept = "image/*"
+        input.capture = "environment"
 
-    input.oninput = function(e){
-        let file = e.target.files[0]
-        if(file){
-            processImage(file, surface, room)
+        input.oninput = e=>{
+            let file = e.target.files[0]
+            if(file) processImage(file, surface, room)
         }
-    }
 
-    input.click()
+        input.click()
+    }
 }  
+
+ 
 function refreshPhotoSection(room){
 
 let r = data.rooms[room]
@@ -2496,35 +2331,23 @@ document.getElementById("roomForm").innerHTML = "<div class='summaryBox'>Select 
 }
 
 })
+
 window.addEventListener("popstate", function(){
 
     let editor = document.getElementById("editorOverlay")
-
     if(editor){
         editor.remove()
         document.body.style.overflow = "auto"
-        isCameraOpen = false
         return
     }
 
-    if(isCameraOpen){
+    let cam = document.getElementById("cameraOverlay")
+    if(cam){
+        cam.remove()
         return
-    }
-
-    if(data.validationMeta?.started){
-
-        let now = Date.now()
-
-        if(now - backPressTime < 1500){
-            window.onbeforeunload = null
-            history.back()
-        }else{
-            alert("Press back again to exit app")
-            backPressTime = now
-            history.pushState(null, "")
-        }
     }
 })
+ 
  
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
