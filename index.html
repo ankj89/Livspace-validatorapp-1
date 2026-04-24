@@ -1618,7 +1618,7 @@ overlay.innerHTML = `
 
 document.body.appendChild(overlay)
  isCameraOpen = true
-history.pushState({ editor: true }, "")
+
 let canvas = overlay.querySelector("#editorCanvas")
 let ctx = canvas.getContext("2d")
 
@@ -1628,13 +1628,18 @@ canvas.addEventListener("touchmove", e => e.preventDefault(), { passive:false })
  
   /* CLOSE */
 overlay.querySelector("#closeBtn").onclick = () => {
+
     document.body.style.overflow = "auto"
+
     canvas.replaceWith(canvas.cloneNode(true))
     document.body.removeChild(overlay)
 
     isCameraOpen = false
 
-   
+    // 🔥 FIX: clean navigation state
+    if(history.state && history.state.camera){
+        history.back()
+    }
 }
 
   
@@ -2073,14 +2078,16 @@ ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
                 openEditorDirect(img, surface, room)
             }
 
-           overlay.querySelector("#closeCam").onclick = () => {
+    overlay.querySelector("#closeCam").onclick = () => {
     stream.getTracks().forEach(t => t.stop())
     document.body.removeChild(overlay)
 
     isCameraOpen = false
 
-    // 🔥 FIX BACK STACK
-
+    // 🔥 FIX
+    if(history.state && history.state.camera){
+        history.back()
+    }
 }
 
             return
@@ -2475,13 +2482,20 @@ document.getElementById("roomForm").innerHTML = "<div class='summaryBox'>Select 
 })
 window.addEventListener("popstate", function(event){
 
-    if(isCameraOpen){
-        return
+   if(document.querySelector("#editorCanvas")){
+    // 🔥 close editor on back
+    let overlay = document.querySelector("#editorCanvas")?.parentElement?.parentElement
+    if(overlay){
+        overlay.remove()
+        document.body.style.overflow = "auto"
     }
+    isCameraOpen = false
+    return
+}
 
-    if(document.querySelector("#editorCanvas")){
-        return
-    }
+if(isCameraOpen){
+    return
+}
 
     if(data.validationMeta?.started){
 
