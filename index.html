@@ -1642,6 +1642,7 @@ async function openEditorDirect(imgSrc, surface, room, index=null){
 
     let drawing=false
     let mode="draw"
+ let activePointerId = null   // 🔥 CRITICAL FIX
 
     const getPos = e=>{
         let r = canvas.getBoundingClientRect()
@@ -1651,25 +1652,27 @@ async function openEditorDirect(imgSrc, surface, room, index=null){
         }
     }
 
-    canvas.addEventListener("pointerdown", e=>{
+ canvas.addEventListener("pointerdown", e=>{
 
     e.preventDefault()
-    e.stopPropagation()
+
+    // 🔥 IGNORE if already drawing (multi-touch protection)
+    if(activePointerId !== null) return
+
+    activePointerId = e.pointerId
 
     if(mode==="draw"){
 
-    drawing = true
+        drawing = true
 
-    let p = getPos(e)
+        let p = getPos(e)
 
-    // 🔥 FIX: always reset path cleanly
-    ctx.beginPath()
-    ctx.moveTo(p.x, p.y)
-}
+        ctx.beginPath()
+        ctx.moveTo(p.x, p.y)
+    }
 
     if(mode==="text"){
 
-        // 🔥 TEMP DISABLE CANVAS INTERACTION
         canvas.style.pointerEvents = "none"
 
         setTimeout(()=>{
@@ -1678,26 +1681,23 @@ async function openEditorDirect(imgSrc, surface, room, index=null){
 
             if(txt){
                 let p = getPos(e)
-
                 ctx.fillStyle = "red"
                 ctx.font = "24px Arial"
                 ctx.fillText(txt, p.x, p.y)
             }
 
-            // 🔥 RESET EVERYTHING
             drawing = false
+            activePointerId = null
             ctx.closePath()
-
-            // 🔥 RE-ENABLE CANVAS
             canvas.style.pointerEvents = "auto"
 
         }, 100)
     }
 })
+canvas.addEventListener("pointermove", e=>{
 
-   canvas.addEventListener("pointermove", e=>{
-
-    if(!drawing) return
+    // 🔥 ONLY TRACK ACTIVE POINTER
+    if(!drawing || e.pointerId !== activePointerId) return
 
     e.preventDefault()
 
@@ -1707,22 +1707,31 @@ async function openEditorDirect(imgSrc, surface, room, index=null){
     ctx.strokeStyle = "red"
     ctx.lineWidth = 4
     ctx.lineCap = "round"
+    ctx.lineJoin = "round"   // 🔥 smoother lines
     ctx.stroke()
 })
+   
 
-canvas.addEventListener("pointerup", ()=>{
+canvas.addEventListener("pointerup", e=>{
+
+    if(e.pointerId !== activePointerId) return
+
     drawing = false
-    ctx.closePath()
-    ctx.beginPath()   // 🔥 FIX
-})
+    activePointerId = null
 
+    ctx.closePath()
+    ctx.beginPath()
+})
+ 
 canvas.addEventListener("pointercancel", ()=>{
     drawing = false
+    activePointerId = null
     ctx.closePath()
 })
 
 canvas.addEventListener("pointerleave", ()=>{
     drawing = false
+    activePointerId = null
 })
 
     overlay.querySelector("#drawBtn").onclick = ()=>{
