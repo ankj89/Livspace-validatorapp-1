@@ -1635,7 +1635,7 @@ z-index:2;
 
 document.body.appendChild(overlay)
  isCameraOpen = true
-
+history.pushState({ editor: true }, "")
 let canvas = overlay.querySelector("#editorCanvas")
 let ctx = canvas.getContext("2d")
 
@@ -1649,7 +1649,7 @@ overlay.querySelector("#closeBtn").onclick = () => {
     document.body.style.overflow = "auto"
 
     canvas.replaceWith(canvas.cloneNode(true))
-    overlay.remove()
+ history.back()
 
     isCameraOpen = false
 
@@ -2498,20 +2498,16 @@ document.getElementById("roomForm").innerHTML = "<div class='summaryBox'>Select 
 })
 window.addEventListener("popstate", function(){
 
-    let canvas = document.querySelector("#editorCanvas")
+    let editor = document.getElementById("editorOverlay")
 
-    if(canvas){
-        let overlay = canvas.parentElement
-        if(overlay){
-            overlay.remove()
-            document.body.style.overflow = "auto"
-        }
+    if(editor){
+        editor.remove()
+        document.body.style.overflow = "auto"
         isCameraOpen = false
         return
     }
 
     if(isCameraOpen){
-        history.pushState(null, "")
         return
     }
 
