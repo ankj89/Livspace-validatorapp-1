@@ -12,7 +12,15 @@
 <style>
 body{font-family:Arial;margin:0;background:#f4f6fb}
 header{background:#1e3d8f;color:white;padding:14px;font-size:18px}
-.container{padding:14px;max-width:1200px;margin:auto}
+.container{
+  padding:14px;
+  max-width:1200px;
+  margin:auto;
+  width:100%;               /* 🔥 FIX */
+}
+ *{
+  min-width:0;   /* 🔥 iOS flex bug fix */
+}
 .card{background:white;padding:16px;margin-bottom:14px;border-radius:8px;border:1px solid #ddd}
 .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
@@ -25,12 +33,36 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 
 .roomTab{display:inline-block;padding:8px 12px;border:1px solid #ccc;margin:3px;border-radius:6px;cursor:pointer}
 
-.wallBox{display:flex;gap:12px;margin-top:6px}
+.wallBox{
+  display:grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap:8px;
+}
+.wallBtn{
+  padding:12px;
+  text-align:center;
+  border:1px solid #ccc;
+  border-radius:8px;
+  background:#fff;
+  font-weight:600;
+  cursor:pointer;
+}
 
+.wallBtn.active{
+  background:#1e3d8f;
+  color:#fff;
+  border-color:#1e3d8f;
+}
 .accordion{cursor:pointer;background:#eef2ff;padding:10px;border-radius:6px;margin-top:10px}
 .accordionContent{display:none;padding-top:10px}
 
-.questionBlock{padding:8px;border-radius:6px;margin-bottom:8px}
+.questionBlock{
+  padding:8px;
+  border-radius:6px;
+  margin-bottom:8px;
+  width:100%;
+  box-sizing:border-box;
+}
 .statusAnswered{background:#e6f7e6}
 .statusPending{background:#ffe6e6}
 
@@ -40,7 +72,11 @@ button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius
 .summaryBox{background:#f9fafc;padding:10px;border-radius:6px;margin-bottom:10px}
 
 /* 🔥 TOGGLE */
-.toggleGroup{display:flex;gap:6px;margin-top:6px}
+.toggleGroup{
+  display:flex;     /* 🔥 ADD BACK */
+  gap:6px;
+  flex-wrap:wrap;
+}
 .toggleBtn{padding:6px 10px;border:1px solid #ccc;border-radius:6px;cursor:pointer;background:#fff}
 .toggleBtn.active.yes{background:#28a745;color:#fff}
 .toggleBtn.active.no{background:#dc3545;color:#fff}
@@ -132,21 +168,23 @@ const societyQuestions = [
 
 /* EXECUTION */
 {key:"waterPoint", label:"Is there an active water supply point at site location?", category:"Execution Constraints", options:["Yes","No"]},
-{key:"electricPoint", label:"Is there an active power supply at site location?", category:"Execution Constraints", options:["Yes","No"]},
+ {key:"electricPoint", label:"Is there an active power supply at site location?", category:"Execution Constraints", options:["Yes","No"]},
  {key:"gassline", label:"Is there LPG gas line installed at site location?", category:"Execution Constraints", options:["Yes","No"]}, 
  {key:"dgbackup", label:"Is there avaiability of DG/power backup?", category:"Execution Constraints", options:["Yes","No"]}, 
-{key:"workNOC", label:"Is builder/scoiety permission required to start the work?", category:"Execution Constraints", options:["Yes","No"]},
+ {key:"workNOC", label:"Is builder/scoiety permission required to start the work?", category:"Execution Constraints", options:["Yes","No"]},
+ {key:"cxstay", label:"Will cx stay during execution?", category:"Execution Constraints",options:["Yes","No"]},
+ {key:"fpDC", label:"(only for tier 2)Do we need to take Floor protection & Deep cleaning in onsite works?", category:"Execution Constraints",options:["Yes","No"]},
 {key:"workNOCpolice", label:"Is police verification required for labours?", category:"Execution Constraints", options:["Yes","No"]},  
 {key:"societyWorktimings", label:"Permissible work days and timings", category:"Execution Constraints", type:"textarea"},
-{key:"cxstay", label:"Will cx stay during execution?", category:"Execution Constraints",options:["Yes","No"]},
+
+ 
 /* MATERIAL */
 {key:"societyRestrictions", label:"Other restrictions on material/specification mandated by builder/society?", category:"Material Specification Constraint", type:"textarea"},
 {key:"faciaRestrictions", label:"Can we do modification on external walls in corridor or facia of building?", category:"Material Specification Constraint", options:["Yes","No"]},
 {key:"electricalmaterial", label:"What is the make and model of existing switchboard fixtures?", category:"Material Specification Constraint", type:"textarea"}
+ 
 ];
   
-const walls=["NW","EW","SW","WW"]
-/* 🔥 MEASUREMENT CONFIG */
 
 const measurementFields = [
 /* 🔥 NEW ADDITIONS */
@@ -157,53 +195,241 @@ const measurementFields = [
 {label:"Floor to Ceiling - Corner 2 (mm)", key:"fc2"},
 {label:"Floor to Ceiling - Corner 3 (mm)", key:"fc3"},
 {label:"Floor to Ceiling - Corner 4 (mm)", key:"fc4"},
-{label:"Floor to Ceiling - Cente (mm)", key:"fc5"},
+{label:"Floor to Ceiling - Center (mm)", key:"fc5"},
 
 /* ROOM DIAGONALS */
 {label:"Room Diagonal 1 (mm)", key:"diag1"},
 {label:"Room Diagonal 2 (mm)", key:"diag2"},
 /* Opp wall pair */
 /* ORTHOGONALITY */
-{label:"WP1 Corner 1 (NW->SW)", key:"wp1_c1"},
-{label:"WP1 Center (NW->SW)", key:"wp1_mid"},
-{label:"WP1 Corner 2 (NW->SW)", key:"wp1_c2"},
+{label:"WallPair1 Corner 1", key:"wp1_c1"},
+{label:"WallPair1 Center", key:"wp1_mid"},
+{label:"WallPair1 Corner 2", key:"wp1_c2"},
 
-{label:"WP2 Corner 1 (EW->WW)", key:"wp2_c1"},
-{label:"WP2 Center (EW->WW)", key:"wp2_mid"},
-{label:"WP2 Corner 2 (EW->WW)", key:"wp2_c2"},
+{label:"WallPair2 Corner 1", key:"wp2_c1"},
+{label:"WallPair2 Center", key:"wp2_mid"},
+{label:"WallPair2 Corner 2", key:"wp2_c2"},
 
 /* WALL CENTER (1200mm) */
-{label:"NW Center (offset)", key:"NW_M"},
-{label:"EW Center (offset)", key:"EW_M"},
-{label:"SW Center (offset)", key:"SW_M"},
-{label:"WW Center (offset)", key:"WW_M"},
+
 
 /* WALL UPPER (~1800mm) */
-{label:"NW Upper (offset)", key:"NW_U"},
-{label:"EW Upper (offset)", key:"EW_U"},
-{label:"SW Upper (offset)", key:"SW_U"},
-{label:"WW Upper (offset)", key:"WW_U"},
+
 
 /* CEILING UTILITIES */
 {label:"Beam Bottom to Floor (mm)", key:"beamFloor"},
 {label:"Sprinkler Head to Floor (mm)", key:"sprinklerFloor"},
 
 /* SOFFIT (WALL-WISE) */
-{label:"Door Soffit to Ceiling - NW", key:"doorsoffitNW"},
-{label:"Door Soffit to Ceiling - EW", key:"doorsoffitEW"},
-{label:"Door Soffit to Ceiling - SW", key:"doorsoffitSW"},
-{label:"Door Soffit to Ceiling - WW", key:"doorsoffitWW"},
+
 /* SUNKUN SLAB */
 {label:"Sunken slab depth", key:"sunkslabdepth"},
 /* WINDOW SOFFIT */
-{label:"Window Soffit to Ceiling - NW", key:"winSoffitNW"},
-{label:"Window Soffit to Ceiling - EW", key:"winSoffitEW"},
-{label:"Window Soffit to Ceiling - SW", key:"winSoffitSW"},
-{label:"Window Soffit to Ceiling - WW", key:"winSoffitWW"}
 
   
 ]
+const questionConfig = {
 
+"Living Room": {
+    room: [
+        "Existing flooring in good condition with appropriate slope/levels?",
+        "Is existing skirting flushed?",   
+        "In case of room extesnion is there a requirement to level the floors?Ex : balcony extensions",
+        "Are there visible undulations or uneven surface on the true ceiling?Take photo with annotation",
+        "Is there any evidence of water leaks or moisture damage on the existing true ceiling?Take photo with annotation",
+        "Are there any issues with the existing false ceiling that require removal and replacement?",
+        "Are the existing doors and door frame in good condition?",
+        "Are the existing windows and window frames in good condition?",
+        "Does the existing windows have space to install additional tracks?",
+        "Does existing grills require repair or re painting?", 
+        "Is there sufficient space to provide swing shutters in wardrobes/storages etc?",
+        "Is there sufficient space to provide bed with drawers?", 
+        "Is existing wiring in good condition and does not require replacement?", 
+        "Does the existing circuit have sufficient load capacity or will require change or new circuit?"
+    ],
+    wall: [      
+ "Is the wall a load-bearing wall/mivan construction/sheer wall?Mark in the structural layout as well",
+"Is the wall dry wall or gypsum wall?Mark in the structural layout as well",
+"Are there niches present?Please take photo with annotation",                     
+"Are there major cracks that require structural repair?Please take photo with annotation",
+"Are there hairline crack/minor cracks/loose plaster requiring re plastering?? Please take photo with annotation",
+"Are there evidence of water seepage or dampness that require waterproofing treatment?Please take photo with annotation",
+"Does the existing wall surface have undulations or uneven surface?",
+"Is there a suitable location for core cut available?",
+"Are existing switches and sockets in working condition?Mark modules and configuration on layout",
+"Is there a AC point(low side works) provided?",
+"Is panelling/pelmet required to be done for AC installation?",
+"Are there any darker shade on the wall?",
+"Is the existing paint in good condition, without excessive peeling, flaking, or bubbling?"
+    ]
+},
+
+ 
+"Bedroom": {
+    room: [
+        "Existing flooring in good condition with appropriate slope/levels?",
+        "Is existing skirting flushed?",   
+        "In case of room extension is there a requirement to level the floors?Ex : balcony extensions",
+        "Are there visible undulations or uneven surface on the true ceiling?Take photo with annotation",
+        "Is there any evidence of water leaks or moisture damage on the existing true ceiling?Take photo with annotation",
+        "Are there any issues with the existing false ceiling that require removal and replacement?",
+        "Are the existing doors and door frame in good condition?",
+        "Are the existing windows and window frames in good condition?",
+        "Does the existing windows have space to install additional tracks?",
+        "Does existing grills require repair or re painting?", 
+        "Is there sufficient space to provide swing shutters in wardrobes/storages etc?",
+        "Is there sufficient space to provide bed with drawers?", 
+        "Is existing wiring in good condition and does not require replacement?", 
+        "Does the existing circuit have sufficient load capacity or will require change or new circuit?"
+    ],
+    wall: [      
+ "Is the wall a load-bearing wall/mivan construction/sheer wall?Mark in the structural layout as well",
+"Is the wall dry wall or gypsum wall?Mark in the structural layout as well",
+"Are there niches present?Please take photo with annotation",                     
+"Are there major cracks that require structural repair?Please take photo with annotation",
+"Are there hairline crack/minor cracks/loose plaster requiring re plastering?? Please take photo with annotation",
+"Are there evidence of water seepage or dampness that require waterproofing treatment?Please take photo with annotation",
+"Does the existing wall surface have undulations or uneven surface?",
+"Is there a suitable location for core cut available?",
+"Are existing switches and sockets in working condition?Mark modules and configuration on layout",
+"Is there a AC point(low side works) provided?",
+"Is panelling/pelmet required to be done for AC installation?",
+"Are there any darker shade on the wall?",
+"Is the existing paint in good condition, without excessive peeling, flaking, or bubbling?"
+    ]
+}, 
+
+"Kitchen": {
+    room: [
+      "Existing flooring in good condition with appropriate slope/levels?",
+       "Are there visible undulations or uneven surface on the true ceiling?Take photo with annotation",
+        "Is there any evidence of water leaks or moisture damage on the existing true ceiling?Take photo with annotation",
+        "Is existing wiring in good condition and does not require replacement?", 
+        "Does the existing circuit have sufficient load capacity or will require change or new circuit?",
+        "Are there plumbing points available?",
+        "Are there any issues with the existing plumbing lines, such as leaks etc that require replacement or repair?",
+        "Are existing plumbing lines CPVC/UPVC?",
+        "Is the main inlet valve accesible?"
+    ],
+    wall: [
+     "Is the wall a load-bearing wall/mivan construction/sheer wall?Mark in the structural layout as well",
+"Is the wall dry wall or gypsum wall?Mark in the structural layout as well",
+     "Are there major cracks that require structural repair?Please take photo with annotation",
+"Are there hairline crack/minor cracks/loose plaster requiring re plastering?? Please take photo with annotation",
+"Are there evidence of water seepage or dampness that require waterproofing treatment? Mark on the structural layout as well and inform Cx",
+     "Does the existing wall surface have undulations or uneven surface?",
+        "Is there a suitable location for core cut available?",
+     "Are existing switches and sockets in working condition?Mark modules and configuration on layout",
+     "Are there any darker shade on the wall?",
+"Is the existing paint in good condition, without excessive peeling, flaking, or bubbling?"
+    ]
+},
+
+"Bathroom": {
+    room: [
+     "Is there any evidence of water leaks or moisture damage on the existing true ceiling?Take photo with annotation",
+     "Is existing wiring in good condition and does not require replacement?",
+     "Are the existing doors and door frame in good condition?",
+     "Are the existing windows and window frames in good condition?",
+     "Is there sufficient space to provide swing shutters in wardrobes/storages etc?",
+        "Is there sufficent space to provide shower cubicle?",
+        "Is it possible to relocate the WC, without any modifications to external pipeline/drain line?",
+      "Are there any issues with the existing plumbing lines, such as leaks etc that require replacement or repair?",
+        "Are existing plumbing lines CPVC/UPVC?",
+        "Is the main inlet valve accesible?"
+    ],
+    wall: [
+     "Is the wall a load-bearing wall/mivan construction/sheer wall?Mark in the structural layout as well",
+    "Are there major cracks that require structural repair?Please take photo with annotation",
+"Are there hairline crack/minor cracks/loose plaster requiring re plastering?? Please take photo with annotation",
+     "Are existing switches and sockets in working condition?Mark modules and configuration on layout",
+        "Are there evidence of water seepage or dampness that require waterproofing treatment?"
+    ]
+},
+ "Balcony": {
+    room: [
+     "Existing flooring in good condition with appropriate slope/levels?",
+     "In case of room extension is there a requirement to level the floors?Ex : balcony extensions",
+     "Do we have sufficient opening available for furniture movement/shifting?",  
+     "Is there any evidence of water leaks or moisture damage on the existing true ceiling?Take photo with annotation",
+     "Is existing wiring in good condition and does not require replacement?",
+     "Are there plumbing/drain points available?", 
+     "Is the main inlet valve accesible?"
+    ],
+    wall: [
+     "Is the wall a load-bearing wall/mivan construction/sheer wall?Mark in the structural layout as well",
+     "Are there major cracks that require structural repair?Please take photo with annotation",
+     "Are there hairline crack/minor cracks/loose plaster requiring re plastering?? Please take photo with annotation",
+      "Are there evidence of water seepage or dampness that require waterproofing treatment?",
+     "Is there a suitable location for core cut available?",
+      "Are existing switches and sockets in working condition?Mark modules and configuration on layout"
+    ]
+}
+
+}
+
+function getRoomType(room){
+if(!room) return ""
+
+let r = room.toLowerCase()
+
+// 🔥 REMOVE SPECIAL CHARACTERS
+r = r.replace(/[^a-z0-9]/g, "")
+
+if(r.includes("bedroom")) return "Bedroom"
+ if(r.includes("passage")) return "Living Room"
+ if(r.includes("guest")) return "Bedroom"
+  if(r.includes("kid's")) return "Bedroom"
+  if(r.includes("kids")) return "Bedroom"
+  if(r.includes("kid")) return "Bedroom"
+  if(r.includes("play")) return "Bedroom"
+if(r.includes("bed")) return "Bedroom"
+if(r.includes("bath")) return "Bathroom"
+ if(r.includes("bathroom")) return "Bathroom"
+if(r.includes("toilet")) return "Bathroom"
+if(r.includes("kitchen")) return "Kitchen"
+if(r.includes("living")) return "Living Room"
+ if(r.includes("hall")) return "Living Room"
+if(r.includes("store")) return "Living Room"
+ if(r.includes("pooja")) return "Living Room"
+ if(r.includes("mandir")) return "Living Room"
+ if(r.includes("staircase")) return "Living Room"
+ if(r.includes("stairs")) return "Living Room"
+  if(r.includes("stair")) return "Living Room"
+ if(r.includes("drawing")) return "Living Room"
+if(r.includes("dining")) return "Living Room"
+if(r.includes("foyer")) return "Living Room"
+ if(r.includes("entrance")) return "Living Room"
+if(r.includes("washroom")) return "Bathroom"
+ if(r.includes("utility")) return "Balcony"
+  if(r.includes("balcony")) return "Balcony"
+  if(r.includes("terrace")) return "Balcony" 
+return room // exact match fallback
+}
+function getRoomQuestions(room){
+
+let type = getRoomType(room)
+
+if(questionConfig[type]?.room){
+    return questionConfig[type].room
+}
+
+return roomQuestions || [] // fallback (your full list)
+}
+
+function getWallQuestions(room){
+
+let type = getRoomType(room)
+
+if(questionConfig[type]?.wall){
+    return questionConfig[type].wall
+}
+
+return wallQuestions // fallback
+}
+
+
+ 
 const roomQuestions=[
 "Existing flooring in good condition with appropriate slope/levels?",
 "Is existing skirting flushed?",   
@@ -212,9 +438,9 @@ const roomQuestions=[
 "Are existing walls in plumb/line and level? Capture room diagonals in measurement section", 
 "Is there level difference in the true ceiling?Capture floor to ceiling dimesions in measurement section",
 "Are there any issues with the existing false ceiling that require removal and replacement?",                   
-"Are there visible undulations or uneven surface on the true ceiling?Mention treatment required in comments",
+ "Are there visible undulations or uneven surface on the true ceiling?Take photo with annotation",
 "Are there any utilities (sprinkler pipes, plumbing line, ducts) or cross beams running on the ceiling? Capture the beam bottom to floor mesurement(in mm), Sprinkler head to Floor measurement(in mm) in mesurements section",
-"Is there any evidence of water leaks or moisture damage on the existing true ceiling?Mark on the layout as well and inform Cx",                    
+ "Is there any evidence of water leaks or moisture damage on the existing true ceiling?Take photo with annotation",                    
 "Are the existing doors and door frame in good condition?",
 "Do we have sufficient opening available for furniture movement/shifting?Capture door height and width in measurement section",  
 "Are the existing windows and window frames in good condition?",
@@ -236,13 +462,12 @@ const roomQuestions=[
 ]
 const wallQuestions=["Is the wall a load-bearing wall/mivan construction/sheer wall?Mark in the structural layout as well",
 "Is the wall dry wall or gypsum wall?Mark in the structural layout as well",
-"Are there niches present?Mark in the structural layout as well",                     
-"Are there major cracks that require structural repair?Mark in the structural layout as well",
-"Are there hairline crack/minor cracks/loose plaster requiring re plastering?? Mark in the structural layout as well",
-"Does the existing wall surface have undulations or uneven surface?Capture mesurements in measurement section",
-"Are there evidence of water seepage or dampness that require waterproofing treatment? Mark on the structural layout as well and inform Cx",
+"Are there niches present?Please take photo with annotation",                                         
+"Are there major cracks that require structural repair?Please take photo with annotation",
+"Are there hairline crack/minor cracks/loose plaster requiring re plastering?? Please take photo with annotation",
+"Are there evidence of water seepage or dampness that require waterproofing treatment?Please take photo with annotation",
 "Is there a suitable location for core cut available?",
-"Are existing switches and sockets in working condition?Capture wall wise modules and configuration in the comments and mark on layout",
+"Are existing switches and sockets in working condition?Mark modules and configuration on layout",
 "Is there a AC point(low side works) provided?",
 "Can split AC be installed post false ceiling w/o pockets? Capture Wall wise Door/Window Soffit to Ceiling measurement in mesurement section",
 "Is panelling/pelmet required to be done for AC installation?",
@@ -255,29 +480,72 @@ let approxSizeMB = parseFloat(localStorage.getItem("dbSizeMB") || "0")
 let db
 let isCameraOpen = false
  let backPressTime = 0
+ 
 function initDB(){
+
 return new Promise((resolve, reject)=>{
-let request = indexedDB.open("SiteValidatorDB", 2) // version bump
 
-request.onupgradeneeded = function(e){
-db = e.target.result
+    let request = indexedDB.open("SiteValidatorDB", 2)
 
-if(!db.objectStoreNames.contains("photos")){
-db.createObjectStore("photos", { keyPath: "id" })
-}
+    let resolved = false   // 🔥 track success
 
-// ✅ NEW STORE
-if(!db.objectStoreNames.contains("appData")){
-db.createObjectStore("appData", { keyPath: "id" })
-}
-}
+    /* 🔴 UPGRADE */
+    request.onupgradeneeded = function(e){
+        db = e.target.result
 
-request.onsuccess = function(e){
-db = e.target.result
-resolve()
-}
+        if(!db.objectStoreNames.contains("photos")){
+            db.createObjectStore("photos", { keyPath: "id" })
+        }
 
-request.onerror = reject
+        if(!db.objectStoreNames.contains("appData")){
+            db.createObjectStore("appData", { keyPath: "id" })
+        }
+    }
+
+    /* ✅ SUCCESS */
+    request.onsuccess = function(e){
+        db = e.target.result
+        resolved = true
+        resolve()
+    }
+
+    /* ❌ ERROR */
+    request.onerror = function(e){
+        console.error("DB error", e)
+        alert("⚠️ Storage error. Reloading app...")
+        reject(e)
+        location.reload()
+    }
+
+    /* 🚫 BLOCKED (VERY IMPORTANT) */
+    request.onblocked = function(){
+        console.error("DB blocked")
+
+        alert(
+            "⚠️ App update detected.\n\n" +
+            "Please close all other tabs of this app and reload."
+        )
+
+        // 🔁 force reload after delay
+        setTimeout(()=>{
+            location.reload()
+        }, 2000)
+    }
+
+    /* ⏱️ FAILSAFE TIMEOUT (CRITICAL) */
+    setTimeout(()=>{
+        if(!resolved){
+            console.error("DB init timeout")
+
+            alert(
+                "⚠️ App storage not responding.\n\n" +
+                "Reloading app..."
+            )
+
+            location.reload()
+        }
+    }, 3000)
+
 })
 }
 
@@ -300,19 +568,28 @@ if(!data){
   
 
 function normalizeData(){
-if(!data.rooms)data.rooms={}
+
+if(!data.rooms) data.rooms = {}
+
 defaultRooms.forEach(r=>{
-if(!data.rooms[r])data.rooms[r]={room:{},wall:{},wallSel:{},measurement:{},photos: {
-  "NW": [],
-  "EW": [],
-  "SW": [],
-  "WW": [],
-  "Ceiling": [],
-  "Floor": []
-}}
-})
+if(!data.rooms[r]){
+    data.rooms[r]={
+        room:{},
+        wall:{},
+        wallSel:{},
+        measurement:{},
+        elevations:[],
+        photos:{
+            Ceiling:[],
+            Floor:[]
+        }
+    }
 }
-normalizeData()
+})
+
+}
+
+ 
 function ensureValidationMeta(){
     if(!data.validationMeta){
         data.validationMeta = {
@@ -323,7 +600,50 @@ function ensureValidationMeta(){
         }
     }
 }  
+ 
+function getElevations(room){
 
+let r = data.rooms[room]
+
+if(!r.elevations || !r.elevations.length){
+
+let input = prompt(
+"Enter elevation names (comma separated)\nExample: 1-A, 1-B, Window, Entry"
+)
+
+if(!input){
+    alert("Please enter at least 1 elevation")
+    return getElevations(room)
+}
+
+let arr = input
+.split(",")
+.map(x => x.trim())
+.filter(x => x)   // remove empty
+
+if(!arr.length){
+    alert("Invalid input")
+    return getElevations(room)
+}
+
+/* ✅ KEEP EXACT USER INPUT */
+r.elevations = [...new Set(arr)]
+
+/* 🔥 INIT PHOTO BUCKETS */
+if(!r.photos) r.photos = {}
+
+r.elevations.forEach(e=>{
+if(!r.photos[e]) r.photos[e] = []
+})
+
+saveData()
+}
+
+return r.elevations
+}
+
+
+ 
 function saveData(){
 let size = new Blob([JSON.stringify(data)]).size / (1024*1024)
 
@@ -332,8 +652,19 @@ if(size > 10){
 }
  
 if(!db){
-    console.warn("DB not ready, retrying...")
-    setTimeout(saveData, 300)
+
+    console.warn("DB not ready — retrying save")
+
+    setTimeout(()=>{
+
+        if(db){
+            saveData()
+        }else{
+            alert("⚠️ App storage not ready.\nPlease wait 2 seconds and continue.\nDo NOT close app.")
+        }
+
+    }, 500)
+
     return
 }
 data.project = {
@@ -398,8 +729,8 @@ if(!pidVal || !cxVal || !cityVal){
 
     renderAppSections()
     renderSociety()
-    renderTabs(defaultRooms[0])
-    openRoom(defaultRooms[0])
+    renderTabs(null) // just show tabs, no auto open
+document.getElementById("roomForm").innerHTML = "<div class='summaryBox'>Select a room to start</div>"
 }
 async function endValidation(){
 await new Promise(r => setTimeout(r, 300))
@@ -578,7 +909,7 @@ const container = document.getElementById("roomTabs")
 
 container.innerHTML = roomOrder.map(r=>`
 <span class="roomTab" 
-style="${r===activeRoom ? 'background:#1e3d8f;color:white' : ''}">
+style="${activeRoom && r===activeRoom ? 'background:#1e3d8f;color:white' : ''}">
     
 <span onclick="openRoom('${r}')">${r}</span>
 
@@ -593,15 +924,18 @@ style="${r===activeRoom ? 'background:#1e3d8f;color:white' : ''}">
 function calculateProgress(room){
 
 let r = data.rooms[room]
-let total = roomQuestions.length + wallQuestions.length
+let rq = getRoomQuestions(room)
+let wq = getWallQuestions(room)
+
+let total = rq.length + wq.length
 let answered = 0
 
-roomQuestions.forEach(q=>{
+rq.forEach(q=>{
 if(r.room[q]) answered++
 })
 
-wallQuestions.forEach(q=>{
-if(r.wall[q]) answered++
+wq.forEach(q=>{
+if(r.wall[q] || (r.wallSel[q] && r.wallSel[q].length)) answered++
 })
 
 return Math.round((answered / total) * 100)
@@ -627,6 +961,7 @@ saveData()
 renderTabs(newName)
 openRoom(newName)
 }
+ 
 function deleteRoom(room){
 
 if(!confirm("Delete this room?")) return
@@ -692,17 +1027,31 @@ if(data.validationMeta?.ended){
     alert("Validation completed. Editing disabled.")
     return
 }
- if(!data.rooms[room]){
+
+if(!data.rooms[room]){
     data.rooms[room] = {
-        room:{},wall:{},wallSel:{},measurement:{},
-        photos:{NW:[],EW:[],SW:[],WW:[],Ceiling:[],Floor:[]}
+        room:{},
+        wall:{},
+        wallSel:{},
+        measurement:{},
+        elevations:[], // 🔥 ADD
+        photos:{
+            Ceiling:[],
+            Floor:[]
+        }
     }
 } 
 const r=data.rooms[room]
+let elevations = getElevations(room)
+ 
 renderTabs(room)
 
 const container=document.getElementById("roomForm")
 container.innerHTML=""
+ let elevInfo = document.createElement("div")
+elevInfo.className = "summaryBox"
+elevInfo.innerHTML = `<b>Elevations:</b> ${elevations.join(", ")}`
+container.appendChild(elevInfo)
 let progress = calculateProgress(room)
 
 let progressDiv = document.createElement("div")
@@ -740,7 +1089,7 @@ let wallSection=createAccordion("Wall Questions")
 
 
 
-wallQuestions.forEach(q=>{
+getWallQuestions(room).forEach(q=>{
 let div=document.createElement("div")
 div.className="questionBlock "+(r.wall[q]?"statusAnswered":"statusPending")
 
@@ -757,38 +1106,54 @@ scrollToNext(div)
 let wallBox=document.createElement("div")
 wallBox.className="wallBox"
 
-walls.forEach(w=>{
-let cb=document.createElement("input")
-cb.type="checkbox"
-let arr=r.wallSel[q]||[]
-cb.checked=arr.includes(w)
 
-cb.onchange=()=>{
-let arr=r.wallSel[q]||[]
-if(cb.checked){if(!arr.includes(w))arr.push(w)}
-else{arr=arr.filter(x=>x!==w)}
-r.wallSel[q]=arr
+
+elevations.forEach(w=>{
+let btn = document.createElement("div")
+btn.className = "wallBtn"
+btn.innerText = w
+
+let arr = r.wallSel[q] || []
+
+if(arr.includes(w)) btn.classList.add("active")
+
+btn.onclick = ()=>{
+
+let arr = r.wallSel[q] || []
+
+if(arr.includes(w)){
+    arr = arr.filter(x=>x!==w)
+    btn.classList.remove("active")
+}else{
+    arr.push(w)
+    btn.classList.add("active")
+}
+
+r.wallSel[q] = arr
 saveData()
 }
-wallBox.append(cb,w)
-})
 
+wallBox.appendChild(btn)
+})
+ 
+// ✅ AFTER LOOP
 let textarea=document.createElement("textarea")
 textarea.value=r.wall[q+"-c"]||""
 
 textarea.oninput=()=>{
-r.wall[q+"-c"]=textarea.value
-saveData()
+   r.wall[q+"-c"]=textarea.value
+   saveData()
 }
 
 div.append(label,toggle,wallBox,textarea)
+
 wallSection.appendChild(div)
-})
+ })
 
 /* ROOM */
 let roomSection=createAccordion("Room Questions")
 
-roomQuestions.forEach(q=>{
+getRoomQuestions(room).forEach(q=>{
 let div=document.createElement("div")
 div.className="questionBlock "+(r.room[q]?"statusAnswered":"statusPending")
 
@@ -816,6 +1181,8 @@ roomSection.appendChild(div)
 /* 🔥 MEASUREMENT SECTION */
 let measureSection=createAccordion("Measurement Section")
 
+/*let elevations = getElevations(room) */  // 🔥 MISSING LINE (CRITICAL FIX)
+ 
 let m = r.measurement || {}
 r.measurement = m
 
@@ -832,8 +1199,9 @@ input.type="number"
 input.placeholder="mm"
 input.value=m[key] || ""
 
-input.onchange=()=>{
-m[key]=parseFloat(input.value) || ""
+input.oninput=()=>{
+let val = parseFloat(input.value)
+m[key] = isNaN(val) ? "" : val
 saveData()
 }
 
@@ -841,19 +1209,71 @@ div.append(label,input)
 return div
 }
 
+// 🔥 DYNAMIC WALL MEASUREMENTS BASED ON ELEVATIONS
 
+/* 🔥 SHOW PAIR INFO */
+if(elevations.length >= 4){
+
+let pairInfo = document.createElement("div")
+pairInfo.className = "summaryBox"
+
+pairInfo.innerHTML = `
+<b>Orthogonal Measurement(take at 1ft above FFL):</b><br>
+WallPair1: ${elevations[0]} ↔ ${elevations[2]}<br>
+WallPair2: ${elevations[1]} ↔ ${elevations[3]}
+`
+
+measureSection.appendChild(pairInfo)
+}
+
+/* 🔥 RENDER MEASUREMENTS WITH DYNAMIC LABELS */
 measurementFields.forEach(f=>{
-measureSection.appendChild(createInput(f.label,f.key))
+
+let label = f.label
+
+// 🔥 MODIFY WP LABELS ONLY
+if(f.key.startsWith("wp1") && elevations.length >= 4){
+label = `${f.label} (${elevations[0]} ↔ ${elevations[2]})`
+}
+
+if(f.key.startsWith("wp2") && elevations.length >= 4){
+label = `${f.label} (${elevations[1]} ↔ ${elevations[3]})`
+}
+
+measureSection.appendChild(createInput(label, f.key))
+
 })
+ 
+
+elevations.forEach(e=>{
+
+// CENTER
+measureSection.appendChild(
+    createInput(`${e} Center (offset) at 5ft from FFL`, `${e}_M`)
+)
+
+// UPPER
+measureSection.appendChild(
+    createInput(`${e} Upper (offset) at highest point from FFL`, `${e}_U`)
+)
+
+// DOOR SOFFIT
+measureSection.appendChild(
+    createInput(`Door Soffit to Ceiling - ${e}`, `doorsoffit_${e}`)
+)
+
+// WINDOW SOFFIT
+measureSection.appendChild(
+    createInput(`Window Soffit to Ceiling - ${e}`, `winSoffit_${e}`)
+)
+
+})
+ 
 /* 🔥 PHOTO SECTION (ADVANCED) */
 let photoSection=createAccordion("Site Photographs")
 photoSection.setAttribute("data-section","photo")
 
 refreshPhotoSection(room) 
-
-
-
-  
 }
 
 function savePhotoToDB(id, dataURL){
@@ -886,7 +1306,7 @@ store.delete(id)
 
   
 function generateExcel(){
-
+saveData()
 if (!data.validationMeta) data.validationMeta = {}
 
 data.validationMeta.endTime = new Date().toLocaleString()
@@ -895,14 +1315,22 @@ normalizeData()
 
 roomOrder.forEach(room=>{
 if(!data.rooms[room]){
+
 data.rooms[room]={
-room:{},wall:{},wallSel:{},measurement:{},
-photos:{NW:[],EW:[],SW:[],WW:[],Ceiling:[],Floor:[]}
+room:{},
+wall:{},
+wallSel:{},
+measurement:{},
+elevations:[],
+photos:{
+    Ceiling:[],
+    Floor:[]
+}
 }
 }
 })
 
-saveData()
+
 
 /* =========================
    🔴 TAB 1: VALIDATION DATA (LEGACY FORMAT)
@@ -926,7 +1354,7 @@ let base = {
 }
 
 /* WALL QUESTIONS */
-wallQuestions.forEach(q=>{
+getWallQuestions(room).forEach(q=>{
 rows.push({
     ...base,
     Section: "Wall",
@@ -938,7 +1366,7 @@ rows.push({
 })
 
 /* ROOM QUESTIONS */
-roomQuestions.forEach(q=>{
+getRoomQuestions(room).forEach(q=>{
 rows.push({
     ...base,
     Section: "Room",
@@ -1000,12 +1428,88 @@ measurementFields.forEach(f=>{
 row[f.key] = m[f.key] || ""
 })
 
+// 🔥 ADD ELEVATION BASED MEASUREMENTS
+
+let elevations = data.rooms[room].elevations || []
+
+elevations.forEach(e=>{
+row[`${e}_M`] = m[`${e}_M`] || ""
+row[`${e}_U`] = m[`${e}_U`] || ""
+row[`doorsoffit_${e}`] = m[`doorsoffit_${e}`] || ""
+row[`winSoffit_${e}`] = m[`winSoffit_${e}`] || ""
+}) 
+
 measureRows.push(row)
 
 })
 
 let ws3 = XLSX.utils.json_to_sheet(measureRows)
-XLSX.utils.book_append_sheet(wb, ws3, "Measurements")
+XLSX.utils.book_append_sheet(wb, ws3, "Room Measurements")
+
+/* =========================
+   🔴 TAB 5: WALL MEASUREMENTS (NEW - CLEAN STRUCTURE)
+========================= */
+
+/* =========================
+   🔴 TAB 4: WALL MEASUREMENTS (NEW)
+========================= */
+
+let wallMeasureRows = []
+
+Object.keys(data.rooms).forEach(room=>{
+
+let m = data.rooms[room].measurement || {}
+let elevations = data.rooms[room].elevations || []
+
+elevations.forEach(e=>{
+
+// CENTER
+if(m[`${e}_M`] !== "" && m[`${e}_M`] !== undefined){
+wallMeasureRows.push({
+Room: room,
+Elevation: e,
+Parameter: "Center",
+Value: m[`${e}_M`]
+})
+}
+
+// UPPER
+if(m[`${e}_U`] !== "" && m[`${e}_U`] !== undefined){
+wallMeasureRows.push({
+Room: room,
+Elevation: e,
+Parameter: "Upper",
+Value: m[`${e}_U`]
+})
+}
+
+// DOOR SOFFIT
+if(m[`doorsoffit_${e}`]){
+wallMeasureRows.push({
+Room: room,
+Elevation: e,
+Parameter: "Door Soffit",
+Value: m[`doorsoffit_${e}`]
+})
+}
+
+// WINDOW SOFFIT
+if(m[`winSoffit_${e}`]){
+wallMeasureRows.push({
+Room: room,
+Elevation: e,
+Parameter: "Window Soffit",
+Value: m[`winSoffit_${e}`]
+})
+}
+
+})
+
+})
+
+let ws4 = XLSX.utils.json_to_sheet(wallMeasureRows)
+XLSX.utils.book_append_sheet(wb, ws4, "Wall Measurements")
+
 
 /* =========================
    🔴 TAB 4: SUMMARY
@@ -1019,8 +1523,8 @@ Start_Time: data.validationMeta?.startTime || "",
 End_Time: data.validationMeta?.endTime || ""
 }]
 
-let ws4 = XLSX.utils.json_to_sheet(summary)
-XLSX.utils.book_append_sheet(wb, ws4, "Summary")
+let ws5 = XLSX.utils.json_to_sheet(summary)
+XLSX.utils.book_append_sheet(wb, ws5, "Summary")
 
 /* =========================
    🔴 FILE NAME
@@ -1034,7 +1538,12 @@ cx = cx.replace(/[^a-zA-Z0-9]/g, "_")
 
 let fileName = `${pid}_${cx}_site_validation_data.xlsx`
 
-XLSX.writeFile(wb, fileName)
+try{
+    XLSX.writeFile(wb, fileName)
+}catch(e){
+    console.error(e)
+    alert("Excel generation failed. Try again.")
+}
 
 /* =========================
    🔴 FLAGS
@@ -1154,7 +1663,7 @@ let finalImg = canvas.toDataURL("image/jpeg", 0.7)
 let id = "img_" + Date.now()
 
 await savePhotoToDB(id, finalImg)
-approxSizeMB += finalImg.length / (1024*1024)
+approxSizeMB += (finalImg.length * 0.75) / (1024*1024)
 localStorage.setItem("dbSizeMB", approxSizeMB)
 
 if(index !== null){
@@ -1295,20 +1804,17 @@ let name = prompt("Room name")
 if(!name) return
 
 if(!data.rooms[name]){
-    data.rooms[name]={
-        room:{},
-        wall:{},
-        wallSel:{},
-        measurement:{},
-        photos:{
-            "NW":[],
-            "EW":[],
-            "SW":[],
-            "WW":[],
-            "Ceiling":[],
-            "Floor":[]
-        }
+  data.rooms[name]={
+    room:{},
+    wall:{},
+    wallSel:{},
+    measurement:{},
+    elevations:[], // 🔥 ADD
+    photos:{
+        Ceiling:[],
+        Floor:[]
     }
+}
 }
 
 roomOrder.push(name)
@@ -1408,7 +1914,7 @@ input.type="text"
 
 input.id=q.key
 input.value=(data.constraints && data.constraints[q.key]) || ""
-input.onchange=saveData
+input.oninput=saveData
 
 div.append(label,input)
 container.appendChild(div)
@@ -1590,7 +2096,7 @@ catch(e){
     input.accept = "image/*"
     input.capture = "environment"
 
-    input.onchange = function(e){
+    input.oninput = function(e){
         let file = e.target.files[0]
         if(file){
             processImage(file, surface, room)
@@ -1609,7 +2115,7 @@ catch(e){
     input.accept = "image/*"
     input.capture = "environment"
 
-    input.onchange = function(e){
+    input.oninput = function(e){
         let file = e.target.files[0]
         if(file){
             processImage(file, surface, room)
@@ -1625,7 +2131,10 @@ let r = data.rooms[room]
 /* GET PHOTO SECTION */
 let photoSection = document.querySelector("[data-section='photo']")
 
-if(!photoSection) return
+if(!photoSection){
+    console.warn("Photo section not ready")
+    return
+}
 
 /* PRESERVE OPEN STATE */
 let wasOpen = photoSection && photoSection.style.display === "block"
@@ -1633,7 +2142,9 @@ let wasOpen = photoSection && photoSection.style.display === "block"
 /* CLEAR */
 photoSection.innerHTML = ""
 
-const surfaces = ["NW","EW","SW","WW","Ceiling","Floor"]
+let elevations = getElevations(room) // 🔥 ensures always present
+
+const surfaces = [...elevations, "Ceiling", "Floor"]
 
 surfaces.forEach(surface=>{
 
@@ -1648,7 +2159,17 @@ block.appendChild(title)
 /* ADD BUTTON */
 let btn=document.createElement("button")
 btn.innerText="Add Photo"
-btn.onclick=()=>openCamera(surface, room)
+btn.onclick=()=>{
+
+let currentCount = (r.photos[surface] || []).length
+
+if(currentCount >= 5){
+    alert("Max 5 photos per surface")
+    return
+}
+
+openCamera(surface, room)
+}
 block.appendChild(btn)
 
 /* IMAGE LIST */
@@ -1876,20 +2397,37 @@ window.onbeforeunload = function () {
         return "Validation in progress. Are you sure?"
     }
 }
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js")
-      .then(reg => console.log("SW registered"))
-      .catch(err => console.log("SW failed", err));
-  });
-}
+
 
  
 
 document.addEventListener("DOMContentLoaded", async ()=>{
 
+let statusBar = document.createElement("div")
+statusBar.id = "dbStatus"
+statusBar.innerText = "Initializing storage..."
+statusBar.style.background = "#ffc107"
+statusBar.style.color = "#000"
+statusBar.style.padding = "6px"
+statusBar.style.textAlign = "center"
+document.body.prepend(statusBar)
+
 startVersionWatcher()
-await initDB()
+try{
+    await initDB()
+}catch(e){
+    alert("Storage failed. Reloading...")
+    location.reload()
+    return
+}
+document.getElementById("dbStatus").innerText = "Storage ready"
+document.getElementById("dbStatus").style.background = "#28a745"
+document.getElementById("dbStatus").style.color = "#fff"
+ 
+if(!db){
+    alert("Storage initialization failed. Reload app.")
+    return
+} 
 // 🔥 iOS SAFE HISTORY INIT
 setTimeout(()=>{
     history.pushState(null, "")
@@ -1921,8 +2459,8 @@ if(data.validationMeta?.started){
 
     renderAppSections()
     renderSociety()
-    renderTabs(roomOrder[0])
-    openRoom(roomOrder[0])
+    renderTabs(null)
+document.getElementById("roomForm").innerHTML = "<div class='summaryBox'>Select a room to continue</div>"
 
 }else{
 
@@ -1980,11 +2518,13 @@ if ("serviceWorker" in navigator) {
             newWorker.onstatechange = () => {
 
                 if (newWorker.state === "activated") {
-                    console.log("New SW activated → reloading")
 
-                    // 🔥 FORCE HARD RELOAD
-                    window.location.reload()
-                }
+    if(db){
+        db.close()
+    }
+
+    window.location.reload()
+}
             }
         }
 
