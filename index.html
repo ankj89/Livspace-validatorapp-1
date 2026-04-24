@@ -1606,27 +1606,32 @@ overlay.style.background = "#000"
 overlay.style.zIndex = 9999
 
 overlay.innerHTML = `
+
+<!-- TOOLBAR (NOW NORMAL FLOW — NOT FIXED) -->
 <div style="
-position:fixed;
-top:env(safe-area-inset-top,10px);
-left:0;
 width:100%;
-z-index:10001;
 display:flex;
 justify-content:center;
 gap:8px;
-background:rgba(0,0,0,0.6);
-padding:10px;
+background:rgba(0,0,0,0.8);
+padding:12px;
 flex-wrap:wrap;
+z-index:2;
 ">
+
 <button id="drawBtn" style="padding:10px 14px;">✏️ Draw</button>
 <button id="textBtn" style="padding:10px 14px;">🔤 Text</button>
 <button id="saveBtn" style="padding:10px 14px;background:#28a745;">💾 Save</button>
 <button id="closeBtn" style="padding:10px 14px;background:#dc3545;">✕ Close</button>
+
 </div>
 
+<!-- CANVAS WRAPPER -->
+<div style="flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;">
 <canvas id="editorCanvas"></canvas>
+</div>
 `
+
 
 document.body.appendChild(overlay)
  isCameraOpen = true
@@ -1731,7 +1736,7 @@ img.onload = ()=>{
 
     canvas.style.width = "100%"
     canvas.style.height = "auto"
- canvas.style.marginTop = "70px"
+ 
 
     // 🔥 RESET ANY OLD TRANSFORMS
     ctx.setTransform(1,0,0,1,0,0)
