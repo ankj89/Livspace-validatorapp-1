@@ -1631,21 +1631,43 @@ async function openEditorDirect(imgSrc, surface, room, index=null){
     overlay.style.flexDirection = "column"
 
     overlay.innerHTML = `
-        <div style="display:flex;gap:8px;padding:10px;background:#111;flex-wrap:wrap;">
-            <button id="drawBtn">✏️ Draw</button>
-            <button id="textBtn">🔤 Text</button>
-            <button id="saveBtn" style="background:#28a745;">💾 Save</button>
-            <button id="closeBtn" style="background:#dc3545;">✕ Close</button>
-        </div>
+    <div id="canvasWrapper" style="
+        flex:1;
+        overflow:auto;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding-bottom:80px;
+    ">
+        <canvas id="editorCanvas"></canvas>
+    </div>
 
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;">
-            <canvas id="editorCanvas"></canvas>
-        </div>
+    <div id="toolbar" style="
+        position:fixed;
+        bottom:0;
+        left:0;
+        width:100%;
+        background:#111;
+        display:flex;
+        justify-content:space-around;
+        gap:8px;
+        padding:10px;
+        z-index:10001;
+    ">
+        <button id="drawBtn">✏️ Draw</button>
+        <button id="textBtn">🔤 Text</button>
+        <button id="saveBtn" style="background:#28a745;">💾 Save</button>
+        <button id="closeBtn" style="background:#dc3545;">✕ Close</button>
+    </div>
+`
     `
 
     document.body.appendChild(overlay)
 
     let canvas = overlay.querySelector("#editorCanvas")
+    canvas.style.touchAction = "none"
+canvas.style.maxWidth = "100%"
+canvas.style.height = "auto"
     let ctx = canvas.getContext("2d")
 
     let img = new Image()
