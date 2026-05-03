@@ -417,6 +417,19 @@ if(r.includes("washroom")) return "Bathroom"
  if(r.includes("utility")) return "Balcony"
   if(r.includes("balcony")) return "Balcony"
   if(r.includes("terrace")) return "Balcony" 
+ if(r.includes("study")) return "Bedroom"
+ if(r.includes("store")) return "Bedroom"
+ if(r.includes("drawing")) return "Living Room"
+ if(r.includes("servant")) return "Bedroom"
+ if(r.includes("lobby")) return "Living Room"
+ if(r.includes("corridor")) return "Living Room"
+ if(r.includes("dresser")) return "Bedroom"
+ if(r.includes("parents")) return "Bedroom"
+ if(r.includes("parent")) return "Bedroom"
+ if(r.includes("lounge")) return "Living Room"
+ if(r.includes("family")) return "Living Room"
+ if(r.includes("theater")) return "Living Room"
+ 
 return room // exact match fallback
 }
 function getRoomQuestions(room){
