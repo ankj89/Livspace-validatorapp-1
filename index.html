@@ -1515,52 +1515,42 @@ let wallMeasureRows = []
 
 Object.keys(data.rooms).forEach(room=>{
 
-let m = data.rooms[room].measurement || {}
-let elevations = data.rooms[room].elevations || []
+    let m = data.rooms[room].measurement || {}
+    let elevations = data.rooms[room].elevations || []
 
-elevations.forEach(e=>{
+    elevations.forEach(e=>{
 
-// CENTER
-if(m[`${e}_M`] !== "" && m[`${e}_M`] !== undefined){
-wallMeasureRows.push({
-Room: room,
-Elevation: e,
-Parameter: "Center",
-Value: m[`${e}_M`]
-})
-}
+        // Always create rows, even if blank
 
-// UPPER
-if(m[`${e}_U`] !== "" && m[`${e}_U`] !== undefined){
-wallMeasureRows.push({
-Room: room,
-Elevation: e,
-Parameter: "Upper",
-Value: m[`${e}_U`]
-})
-}
+        wallMeasureRows.push({
+            Room: room,
+            Elevation: e,
+            Parameter: "Center",
+            Value: m[`${e}_M`] ?? ""
+        })
 
-// DOOR SOFFIT
-if(m[`doorsoffit_${e}`]){
-wallMeasureRows.push({
-Room: room,
-Elevation: e,
-Parameter: "Door Soffit",
-Value: m[`doorsoffit_${e}`]
-})
-}
+        wallMeasureRows.push({
+            Room: room,
+            Elevation: e,
+            Parameter: "Upper",
+            Value: m[`${e}_U`] ?? ""
+        })
 
-// WINDOW SOFFIT
-if(m[`winSoffit_${e}`]){
-wallMeasureRows.push({
-Room: room,
-Elevation: e,
-Parameter: "Window Soffit",
-Value: m[`winSoffit_${e}`]
-})
-}
+        wallMeasureRows.push({
+            Room: room,
+            Elevation: e,
+            Parameter: "Door Soffit",
+            Value: m[`doorsoffit_${e}`] ?? ""
+        })
 
-})
+        wallMeasureRows.push({
+            Room: room,
+            Elevation: e,
+            Parameter: "Window Soffit",
+            Value: m[`winSoffit_${e}`] ?? ""
+        })
+
+    })
 
 })
 
