@@ -603,6 +603,7 @@ return new Promise((resolve, reject)=>{
   
 let roomOrder=[...defaultRooms]
 let data = JSON.parse(localStorage.getItem("validatorData") || "null")
+ let currentRoom = null
 
 // ✅ If no data → true fresh start
 if(!data){
@@ -1076,7 +1077,41 @@ div.appendChild(btn)
 
 return div
 }
+function validateCurrentRoomBeforeExit(room){
 
+    if(!room) return true
+
+    let r = data.rooms[room]
+
+    if(!r) return true
+
+    let m = r.measurement || {}
+    let elevations = r.elevations || []
+
+    // Check if at least one Center measurement exists
+    let hasCenterMeasurement = elevations.some(e=>{
+
+        let val = m[`${e}_M`]
+
+        return val !== "" &&
+               val !== undefined &&
+               val !== null
+    })
+
+    if(!hasCenterMeasurement){
+
+        alert(
+            "⚠️ Mandatory measurement missing\n\n" +
+            `Room: ${room}\n\n` +
+            "Capture at least one Center measurement before moving to another room.\n\n" +
+            "This measurement is required to capture room dimensions."
+        )
+
+        return false
+    }
+
+    return true
+}
 
 
 function openRoom(room){
@@ -1084,6 +1119,19 @@ if(data.validationMeta?.ended){
     alert("Validation completed. Editing disabled.")
     return
 }
+/* 🔥 BLOCK ROOM SWITCH */
+if(currentRoom && currentRoom !== room){
+
+    let allowed = validateCurrentRoomBeforeExit(currentRoom)
+
+    if(!allowed){
+        return
+    }
+}
+
+/* save active room */
+currentRoom = room
+ 
 
 if(!data.rooms[room]){
     data.rooms[room] = {
