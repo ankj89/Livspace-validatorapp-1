@@ -1644,36 +1644,63 @@ renderAppSections()
 function processImage(file, surface, room){
 
 let img = new Image()
-
-// 🔥 USE OBJECT URL INSTEAD OF BASE64
 let url = URL.createObjectURL(file)
 
 img.src = url
 
 img.onload = function(){
-if(img.width > 2000){
-    alert("Image too large. Please reduce camera resolution.")
-    return
-}
- 
+
 let canvas = document.createElement("canvas")
 let ctx = canvas.getContext("2d")
- canvas.style.touchAction = "none"
 
-// 🔥 REDUCE SIZE (VERY IMPORTANT FOR MOBILE)
-canvas.width = img.width
-canvas.height = img.height
+let MAX_WIDTH = 1280
+let MAX_HEIGHT = 1280
 
-ctx.drawImage(img,0,0,canvas.width,canvas.height)
+let width = img.width
+let height = img.height
 
-// 🔥 COMPRESS IMAGE
-let compressed = canvas.toDataURL("image/jpeg", 0.5)
+/* maintain aspect ratio */
 
-// 🔥 CLEAN MEMORY
+if(width > height){
+
+    if(width > MAX_WIDTH){
+        height *= MAX_WIDTH / width
+        width = MAX_WIDTH
+    }
+
+}else{
+
+    if(height > MAX_HEIGHT){
+        width *= MAX_HEIGHT / height
+        height = MAX_HEIGHT
+    }
+}
+
+canvas.width = width
+canvas.height = height
+
+ctx.drawImage(
+    img,
+    0,
+    0,
+    width,
+    height
+)
+
+/* stronger compression */
+
+let compressed = canvas.toDataURL(
+    "image/jpeg",
+    0.6
+)
+
 URL.revokeObjectURL(url)
 
-// 🔥 OPEN EDITOR
-openEditorDirect(compressed, surface, room)
+openEditorDirect(
+    compressed,
+    surface,
+    room
+)
 
 }
 }
@@ -2150,13 +2177,35 @@ async function openCamera(surface, room){
 
         overlay.querySelector("#captureBtn").onclick = ()=>{
 
-            let canvas = document.createElement("canvas")
-            canvas.width = video.videoWidth
-            canvas.height = video.videoHeight
+           let canvas = document.createElement("canvas")
+let ctx = canvas.getContext("2d")
 
-            canvas.getContext("2d").drawImage(video,0,0)
+let MAX_WIDTH = 1280
 
-            let img = canvas.toDataURL("image/jpeg",0.7)
+let width = video.videoWidth
+let height = video.videoHeight
+
+if(width > MAX_WIDTH){
+
+    height *= MAX_WIDTH / width
+    width = MAX_WIDTH
+}
+
+canvas.width = width
+canvas.height = height
+
+ctx.drawImage(
+    video,
+    0,
+    0,
+    width,
+    height
+)
+
+let img = canvas.toDataURL(
+    "image/jpeg",
+    0.6
+)
 
             stream.getTracks().forEach(t=>t.stop())
             overlay.remove()
